@@ -68,7 +68,7 @@
 ###### main方法其实也是一个线程。线程的执行先后随机，完全看谁先得到CPU的资源
 ###### java中每次程序至少启动两个线程。一个是main线程，一个是垃圾收集线程。而每一个java命令执行一个类的时候，实际上都会启动一个JMV，每个JVM实际就在操作系统中启动一个进程
 #### 2.1.5.线程状态的转换
-![avatar](/ThreadState.bmp)
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/ThreadState.bmp)
 #### 2.1.6.线程同步
 ##### synchronized单独使用
 1. 代码块：在多线程环境下，synchronized块中的方法获取了lock实例的monitor，试过实例相同，那么只有一个线程能执行该块内容<br>
@@ -133,7 +133,7 @@ public synchronized void consume()
 }
 ```
 ##### volatile
-![avatar](/MTMM.bmp)
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/MTMM.bmp)
 ###### 多线程的内存模型：main memory（主存）、working memory（线程栈），在处理数据时，线程会把值从主存load到本地站，完成操作后再save回去（volatile关键词的作用：每次针对该变量的操作都激发一次load and save）。
 ###### 针对多线程使用的变量如果不是volatile或者final修饰的，很有可能产生不可预知的结果（另一个线程修改了这个值，但是之后在某线程看到的是修改 之前的值）。其实道理上讲同一实例的同一属性本身只有一个副本。但是多线程是会缓存值得，本质上，volatile就是不去缓存，直接取值。在线程安全的情况下加volatile会牺牲性能。
 #### 2.1.7.线程数据传递
