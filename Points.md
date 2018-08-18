@@ -184,7 +184,8 @@ public synchronized void consume()
 ###### 数据链路层，加上以太网协议头，进行CRC编码，为IP模块发送和接受IP数据包，为ARP模块发送ARP请求和接受ARP应答，为RARP发送RARP请求和接受RARP应答。链路层上至少支持loopback协议和以太网协议（RFC894和RFC1042）
 ###### 硬件层次，包含网卡的定义，网线的制式等
 ###### 端口号是用在TCP、UDP上的一个逻辑号码，并不是一个硬件端口，我们平时说吧某某端口封掉，也只是在IP层次把带有这个号码的IP包给过滤掉
-###### ARP协议
+#### 3.1.1.IP协议
+###### IP协议shi是TCP/IP
 ## 4.zookeeper
 ## 5.redis
 ## 6.异常分级
