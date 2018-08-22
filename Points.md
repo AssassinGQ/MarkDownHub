@@ -332,6 +332,42 @@ public synchronized void consume()
 ###### 对于第一类，在约定的目录下创建临时目录节点，监听节点数目是否是我们要求的数目
 ###### 对于第二类，和分布式锁服务中的控制时序场景基本原理一致，入队有编号，出队有编号
 #### 4.3.6.分布式与数据复制
+###### Zookeeper作为一个为集群提供一致的数据服务，自然，他要在所有机器间做数据复制。数据复制有如下好处：<br>1.容错，一个节点出错，不至于让整个系统停止工作，别的节点可以接管他的工作<br>2.提高系统的扩展能力：把负载分布到多个节点上去，或者增加节点来提高系统的负载能力<br>3.提高性能：让客户端本地访问就近的节点他，提高用户访问速度
+###### 从客户端读写访问的透明度来看，数据复制集群系统分为下面两种：<br>1.写主：对数据的修改提交给指定的节点。读无此限制，可以读取任何一个节点。这种情况下，客户端需要对读和写进行区别，俗称读写分离<br>2.写任意：对数据的修改可提交给任意的节点，跟读一样。这种情况下，客户端对集群节点的角色与变化透明
+###### 对于Zookeeper而言，它采用的是写任意。通过增加机器，他的读吞吐能力和响应能力扩展性非常好，而且，随着机器的增多，吞吐能力肯定下降（这也是他简历observer的原因），而响应能力则取决于具体实现方式，是延迟复制保持最终一直性还是立即复制快速响应
+#### 4.3.7.Zookeeper角色描述
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/ZookeeperRoleDescrite.png)
+#### 4.3.8.Zookeeper与客户端
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/ZookeeperClient.png)
+#### 4.3.9.Zookeeper设计目的
+###### 最终一致性：client不论连接到哪个server，展示给它的都是同一个视图，这是Zookeeper的重要性能
+###### 可靠性：具有简单、健壮、良好的性能，如果消息被一台服务器接受，那么它将被所有的服务器接受
+###### 实时性：Zookeeper保证客户端将在一个时间间隔范围内获得服务器的更新信息，或者服务器失效信息。但由网络延时等原因，Zookeeper不能保证两个客户端能同时得到刚更新的数据，如果需要最新数据，应该在读数据之前调用sync()接口
+###### 等待无关：慢的或者失效的client不得干预快速的client的请求，使得每个client都能有效地等待
+###### 原子性：更新只能成功或者失败，没有中间状态
+###### 顺序性：包括全局有序和偏序两种。全局有序是指如果在一台服务器上消息a在消息b前发布，则在所有服务器上消息a都将在消息b前被发布；偏序是指如果一个消息b在消息a后备同一个发送者发布，a必将排在b前面？？？
+#### 4.3.10.Zookeeper工作原理
+###### Zookeeper的核心是原子广播，这个机制保证了各个服务器之间的同步。实现这个机制的协议叫做Zab协议。Zab协议有两种模式，它们分别是恢复模式（选主）和广播模式（同步）。当服务启动或者在领导者崩溃后，Zab就进入了恢复模式，当领导者被选举出来，且大多数服务器完成了和leader的状态同步后，恢复模式就结束了，状态同步保证了leader和follower具有相同的系统状态
+###### 为了保证食物的顺序一致性，Zookeeper采用了递增的事务id号（zxid）来标识事务。所有的提议（proposal）都在被提出的时候加上了zxid。实现中zxid是一个64位的数字，它高32位是epoch，用来标识leader关系是否改变，每次一个leader被选出来，他都会有一个新的epoch，标识当前属于哪个leader的统治时期。低32位用于递增计数。
+#### 4.3.11.Zookeeper下Server的工作状态
+###### 有三种状态：LOOKING（当前Server不知道leader是谁，正在搜寻），LEADING（当前Server即为选举出来的leader），FOLLOWER（leader已经选举出来，当前Server与之同步）
+#### 4.3.12.Zookeeper选主流程（basic paxos）
+###### 当leader崩溃或者leader失去大多数的follower，这时候zk进入恢复模式，恢复模式需要重新选举出一个新的leader，让所有的Server都恢复到一个正确的状态。Zk的选举算法有两种，一种是局域basic paxos实现的，另外一种是基于fast paxos算法实现的。系统默认的选举算法为fast paxos
+###### 1.选举线程由当前Server发起选举的线程担任，其主要功能是投票结果进行统计，并选出推荐的Server；<br>2.选举线程首先向所有Server发起一次询问（包括自己）<br>3.选举线程收到回复后，验证是否是自己发起的询问（验证zxid是否一致），然后获取对方的id（myid），并存储到当前询问对象列表中，最后获取对方提议的leader相关信息（id，zxid），并将这些信息存储到档次选举的投票记录表中；<br>4.当收到所有Server回复后，就计算出zxid最大的那个Server，并将这个Server相关信息设置成下一次要投票的Server；<br>5.线程将当前zxid最大的Server设置为当前Server要推荐的Leader，如果此时获胜的Server获得n/2+1的Server票数，设置当前推荐的leader为获胜的Server，将根据获胜的Server相关信息设置自己的状态，否则，继续这个过程，知道leader被选举出来。通过流程分析，我们可以得出：要使Leader获得多数Server的支持，则Server总数必须是奇数2n+1，且存活的Server的数目补的少于n+1，每个Server启动后都会重复以上流程。在恢复模式下，如果是刚才崩溃状态恢复的或者刚启动的server还会从磁盘快照中恢复数据和绘画信息，zk会记录事务日志并定期进行快照，方便在恢复时进行状态恢复。选主的具体流程图如下：
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/ZookeeperBasicPaxos.png)
+#### 4.3.13.Zookeeper选主流程（fast paxos）
+###### fast paxos流程是在选举过程中，某Server首先向所有Server提议自己要成为leader，当其他Server收到提议后，解决epoch和zxid 的冲突，并接受对方的提议，然后向对方发送接受提议完成的消息，重复这个流程，最后一定能选出leader
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/ZookeeperFastPaxos.png)
+#### 4.3.14.Zookeeper同步流程
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/ZookeeperSync.png)
+###### 选完leader以后，zk就进入状态同步过程：<br>1.Leader等待server连接<br>2.follower连接leader，将最大的zxid发送个leader<br>3.leader根据follower的zxid确定同步点<br>4.完成同步后通知follower已经成为uptodate状态<br>5.follower收到uptodate消息后，又可以重新接受client的请求进行服务了
+#### 4.3.15.Zookeeper工作流程-leader
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/ZookeeperLeaderWork.png)
+###### 1.恢复数据<br>2.维持与learner的心跳，接受learner请求并判断learner的请求消息类型<br>3.Learner的消息类型主要有PING消息（Learner的心跳信息）、REQUEST消息（Follower发送的提议信息，包括写请求及同步请求）、ACK消息（Follower的对提议的回复，超过半数Follower通过，则commit该提议）、REVALIDATE消息（用来延长SESSION有效时间），根据不同的消息类型，进行不同的处理
+#### 4.3.16.Zookeeper工作流程-follower
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/ZookeeperFollowerWork.png)
+###### Follower主要有四个功能：<br>1.向leader发送请求（PING请求、REQUEST请求、ACK消息、REVALIDATE消息）<br>2.接受Leader消息并进行处理<br>3.接受Client的请求，如果为写请求，发送给Leader进行投票<br>4.给Client返回结果
+###### Follower的消息循环处理如下几种来自Leader的消息：PING消息（心跳消息）、PROPOSAL消息（Leader发起的提案，要求Follower投票）、COMMIT消息（服务器端最新一次提案的信息）、UPTODATE消息（表明同步完成）、REVALIDATE消息（更具Leader的REVALIDATE结果，关闭revalidate的session还是允许其接受消息）、SYNC消息（返回SYNC结果到客户端，这个消息最初由客户端发起，用来强制得到最新的更新）
 ## 5.redis
 ## 6.异常分级
 ## 7.中间件
