@@ -336,7 +336,7 @@ public synchronized void consume()
 ###### 从客户端读写访问的透明度来看，数据复制集群系统分为下面两种：<br>1.写主：对数据的修改提交给指定的节点。读无此限制，可以读取任何一个节点。这种情况下，客户端需要对读和写进行区别，俗称读写分离<br>2.写任意：对数据的修改可提交给任意的节点，跟读一样。这种情况下，客户端对集群节点的角色与变化透明
 ###### 对于Zookeeper而言，它采用的是写任意。通过增加机器，他的读吞吐能力和响应能力扩展性非常好，而且，随着机器的增多，吞吐能力肯定下降（这也是他简历observer的原因），而响应能力则取决于具体实现方式，是延迟复制保持最终一直性还是立即复制快速响应
 #### 4.3.7.Zookeeper角色描述
-![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/ZookeeperRoleDescrite.png)
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/ZookeeperRoleDescribe.png)
 #### 4.3.8.Zookeeper与客户端
 ![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/ZookeeperClient.png)
 #### 4.3.9.Zookeeper设计目的
@@ -371,27 +371,41 @@ public synchronized void consume()
 ## 5.redis
 ## 6.异常分级
 ## 7.中间件
-## 8.Map
-### 8.1.Map接口
-### 8.2.HashMap
-### 8.3.Hashtable
-### 8.4.SortedMap接口
-### 8.5.TreeMap
-### 8.6.LinkedHashMap
-## 9.List
-## 10.Set
-## 11.Queue
-## 12.Collection
-## 13.String
-## 14.数据结构（数组，链表，队列，栈，树，图，堆，散列表，红黑树）
-## 15.JVM，GC
-## 16.决策树
-## 17.操作系统生产者消费者
-## 18.模板类和泛型类的区别
+## 8.Java集合继承关系图
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaIterator1.png)
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaIterator2.png)
+###### 数组虽然也可以存储对象，但长度是固定的；集合长度是可变的，数组中可以存储基本数据类型，集合只能存储对象
+###### 上述类图中，实线边框的是实现类，比如ArrayList，LinkedList，HashMap等，折线边框的是抽象类，比如AbstractCollection，AbstractList，AbstractMap等，而点线边框的是接口，比如Collection，Iterator，List等
+###### Collection是一个集合接口，而Collections是一个包装类，提供了很多静态多态方法，此类就像一个工具类，不能被实例化，服务于Java 的Collection框架
+###### 关于Collections类中同步集合的方法，要考虑两点，首先整个操作必须要原子性，Collections只能保证集合类中的方法的线程安全，如果自定义的方法中调用了两次集合方法，并且两处会产生线程安全问题，就需要在自定的方法上加锁，再者自定义方法上加锁必须加到集合上，而不是加到方法上，加到方法上那个锁其实是加载方法所在的类或对象上，而Collections的线程安全方法加的锁是加在集合上的
+### 8.1.Iterator接口
+###### Iterator接口，这是一个用于遍历集合中元素的接口，主要包含hashNext(),next(),remove()三种方法。他的一个子接口LinkedIterator在它的基础上又添加了三种方法，分别是add(),previous(),hasPrevious()。也就是说如果实现Iterator接口，那么在遍历集合中元素的时候，只能往后遍历，被遍历后的元素不会再遍历到，通常无序集合实现的都是这个接口，比如HashSet，HashMap；而那些元素有序的集合，实现的一般都是LinkedIterator接口，实现这个接口的集合可以双向遍历，比如ArrayList
+### 8.2.Map接口
+###### Collection属于单值的操作，是单列集合，Map中的每个元素都是用key-value的形式存储在集合中，是双列集合
+###### Map是个接口，有以下实现：HashMap、Hashtable、Properties、LinkedHashMap、IdentityHashMap、TreeMap、WeakHashMap、ConcurrentHashMap。有一个抽象类，AbstractMap
+#### 8.2.1.HashMap
+#### 8.2.2.Hashtable
+#### 8.2.3.SortedMap接口
+#### 8.2.4.TreeMap
+#### 8.2.5.LinkedHashMap
+### 8.3.Collection接口
+###### 
+#### 8.3.1.List接口
+###### 可以存放重复的内容
+#### 8.3.2.Set接口
+###### 不能存放重复的内容，重复的内容靠hashCode()和equals()两个方法区分
+#### 8.3.3.Queue接口
+###### 队列接口
+## 9.String
+## 10.数据结构（数组，链表，队列，栈，树，图，堆，散列表，红黑树）
+## 11.JVM，GC
+## 12.决策树
+## 13.操作系统生产者消费者
+## 14.模板类和泛型类的区别
 ###### Java的泛型靠的还是类型擦除，目标代码只会生成一份，牺牲的是运行速度。
 ###### C++的模板会对针对不同的模板参数静态实例化，目标代码体积会稍大一些，运行速度会快很多。
-## 19.Java设计模式
-## 20.回调函数
+## 15.Java设计模式
+## 16.回调函数
 #### 回调函数的概念
 ##### 最原始的回调函数是C语言中，回调函数实现了底层调用高层函数的功能。高层在调用底层函数时，将一个函数指针传给被调用的函数，当被调用的函数返回时，会调用该函数指针所指的函数，同时将返回值以参数的形式传给这个函数指针对应的函数。这个函数指针所指的函数就是回调函数。所以回调函数的意思就是调用了一个函数后，被调用的函数回过来调用高层的函数
 #### java回调函数的一般实现
