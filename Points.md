@@ -372,24 +372,37 @@ public synchronized void consume()
 ## 6.异常分级
 ## 7.中间件
 ## 8.Java集合继承关系图
-![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaIterator1.png)
-![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaIterator2.png)
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaGroup1.bmp)
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaGroup2.bmp)
 ###### 数组虽然也可以存储对象，但长度是固定的；集合长度是可变的，数组中可以存储基本数据类型，集合只能存储对象
 ###### 上述类图中，实线边框的是实现类，比如ArrayList，LinkedList，HashMap等，折线边框的是抽象类，比如AbstractCollection，AbstractList，AbstractMap等，而点线边框的是接口，比如Collection，Iterator，List等
 ###### Collection是一个集合接口，而Collections是一个包装类，提供了很多静态多态方法，此类就像一个工具类，不能被实例化，服务于Java 的Collection框架
 ###### 关于Collections类中同步集合的方法，要考虑两点，首先整个操作必须要原子性，Collections只能保证集合类中的方法的线程安全，如果自定义的方法中调用了两次集合方法，并且两处会产生线程安全问题，就需要在自定的方法上加锁，再者自定义方法上加锁必须加到集合上，而不是加到方法上，加到方法上那个锁其实是加载方法所在的类或对象上，而Collections的线程安全方法加的锁是加在集合上的
 ### 8.1.Iterator接口
-###### Iterator接口，这是一个用于遍历集合中元素的接口，主要包含hashNext(),next(),remove()三种方法。他的一个子接口LinkedIterator在它的基础上又添加了三种方法，分别是add(),previous(),hasPrevious()。也就是说如果实现Iterator接口，那么在遍历集合中元素的时候，只能往后遍历，被遍历后的元素不会再遍历到，通常无序集合实现的都是这个接口，比如HashSet，HashMap；而那些元素有序的集合，实现的一般都是LinkedIterator接口，实现这个接口的集合可以双向遍历，比如ArrayList
+###### Iterator接口，这是一个用于遍历集合中元素的接口，主要包含hashNext(),next(),remove()三种方法。他的一个子接口ListIterator在它的基础上又添加了三种方法，分别是add(),previous(),hasPrevious()。也就是说如果实现Iterator接口，那么在遍历集合中元素的时候，只能往后遍历，被遍历后的元素不会再遍历到，通常无序集合实现的都是这个接口，比如HashSet，HashMap；而那些元素有序的集合，实现的一般都是ListIterator接口，实现这个接口的集合可以双向遍历，比如ArrayList<br>Collection依赖于Iterator，是因为Collection的实现类都要实现iterator()函数，返回一个Iterator对象。
 ### 8.2.Map接口
-###### Collection属于单值的操作，是单列集合，Map中的每个元素都是用key-value的形式存储在集合中，是双列集合
-###### Map是个接口，有以下实现：HashMap、Hashtable、Properties、LinkedHashMap、IdentityHashMap、TreeMap、WeakHashMap、ConcurrentHashMap。有一个抽象类，AbstractMap
-#### 8.2.1.HashMap
-#### 8.2.2.Hashtable
-#### 8.2.3.SortedMap接口
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaMap.bmp)
+###### Collection属于单值的操作，是单列集合，Map中的每个元素都是用key-value的形式存储在集合中，是双列集合。Map没有直接取出元素的方法，而是先转成Set集合，再通过迭代获取元素
+###### Map是个映射接口，即key-value键值对，Map中的每一个元素包含一个key和一个value，key不能重复，每个key最多只能映射一个值，有以下实现：HashMap、Hashtable、Properties、LinkedHashMap、IdentityHashMap、TreeMap、WeakHashMap、ConcurrentHashMap。有一个抽象类，AbstractMap，它实现了Map接口中大部分的API。
+###### Map接口提供三种Collection视图。允许以键集、值集合键值映射关系集的形式查看映射的内容。由于键值的唯一性，所以键集、键值集都是Set，而值集是Collection
+###### Map的实现类提供两个“标准的”构造方法，第一个无参构造，用于创建空映射；第二个带有单个Map类型参数的构造方法，用于创建一个与其参数具有相同键值映射关系的新映射。
+###### Map中定义了一个接口interface Entry<K, V>，定义了键值对。
+#### 8.2.1.AbstractMap
+###### AbstractMap是继承于Map的抽象类，它实现了Map中的大部分API。其他Map的实现类可以通过继承AbstractMap来减少重复编码
+#### 8.2.2.SortedMap
+###### SortedMap是继承与Map的接口。SortedMap中的内容是排序的键值对，排序的方法是通过比较器（Comparator）
+#### 8.2.3.NavigableMap
+###### NavigableMap是继承于SortedMap的接口。相比于SortedMap，NavigableMap有一系列的导航方法；如“获取大于/等于某对象的键值对”、“获取小于/等于某对象的键值对”等等
 #### 8.2.4.TreeMap
+###### TreeMap继承于AbstractMap，且实现了NavigableMap接口，因此TreeMap中的内容是“有序的键值对”
+#### 8.2.5.HashMap
+###### HashMap继承于AbstractMap，但没有实现NavigableMap接口，因此HashMap的内容是“不保证次序的键值对”
+#### 8.2.6.WeakHashMap
+###### WeakHashMap继承与AbstractMap，它和HashMap的区别是WeakHashMap的键是弱键，会被GC
+#### 8.2.2.Hashtable
 #### 8.2.5.LinkedHashMap
 ### 8.3.Collection接口
-###### 
+###### Collection是一个接口，是高度抽象出来的集合，它包含了集合的基本操作和属性。Collection包含了List和Set两大分支。List是一个有序的队列，每一个元素都有它的索引。第一个元素的索引值是0。
 #### 8.3.1.List接口
 ###### 可以存放重复的内容
 #### 8.3.2.Set接口
