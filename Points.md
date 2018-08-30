@@ -381,7 +381,7 @@ public synchronized void consume()
 ### 8.1.Iterator接口
 ###### Iterator接口，这是一个用于遍历集合中元素的接口，主要包含hashNext(),next(),remove()三种方法。他的一个子接口ListIterator在它的基础上又添加了三种方法，分别是add(),previous(),hasPrevious()。也就是说如果实现Iterator接口，那么在遍历集合中元素的时候，只能往后遍历，被遍历后的元素不会再遍历到，通常无序集合实现的都是这个接口，比如HashSet，HashMap；而那些元素有序的集合，实现的一般都是ListIterator接口，实现这个接口的集合可以双向遍历，比如ArrayList<br>Collection依赖于Iterator，是因为Collection的实现类都要实现iterator()函数，返回一个Iterator对象。
 ### 8.2.Map接口
-![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaMap.bmp)
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaGroupMap.bmp)
 ###### Collection属于单值的操作，是单列集合，Map中的每个元素都是用key-value的形式存储在集合中，是双列集合。Map没有直接取出元素的方法，而是先转成Set集合，再通过迭代获取元素
 ###### Map是个映射接口，即key-value键值对，Map中的每一个元素包含一个key和一个value，key不能重复，每个key最多只能映射一个值，有以下实现：HashMap、Hashtable、Properties、LinkedHashMap、IdentityHashMap、TreeMap、WeakHashMap、ConcurrentHashMap。有一个抽象类，AbstractMap，它实现了Map接口中大部分的API。
 ###### Map接口提供三种Collection视图。允许以键集、值集合键值映射关系集的形式查看映射的内容。由于键值的唯一性，所以键集、键值集都是Set，而值集是Collection
@@ -390,23 +390,50 @@ public synchronized void consume()
 #### 8.2.1.AbstractMap
 ###### AbstractMap是继承于Map的抽象类，它实现了Map中的大部分API。其他Map的实现类可以通过继承AbstractMap来减少重复编码
 #### 8.2.2.SortedMap
-###### SortedMap是继承与Map的接口。SortedMap中的内容是排序的键值对，排序的方法是通过比较器（Comparator）
+###### SortedMap是继承与Map的接口。SortedMap中的内容是排序的键值对，排序的方法是自然排序或者通过用户指定的比较器（Comparator）
+###### 四种构造函数：无参构造方法，带Comparator参数的构造方法，带Map参数的构造方法（自然排序），带SortedMap类型参数的构造方法
 #### 8.2.3.NavigableMap
 ###### NavigableMap是继承于SortedMap的接口。相比于SortedMap，NavigableMap有一系列的导航方法；如“获取大于/等于某对象的键值对”、“获取小于/等于某对象的键值对”等等
-#### 8.2.4.TreeMap
-###### TreeMap继承于AbstractMap，且实现了NavigableMap接口，因此TreeMap中的内容是“有序的键值对”
+###### 提供操作键值对的方法：lowerEntry，floorEntry，ceilingEntity和higherEntity方法，它们分别返回小于，小于等于，大于等于，大于给定键的键关联的Map.Entry对象；firstEntry，pollFirstEntry，lastEntry，pollLastEntry方法，它们返回和/或移除最小和最大的映射关系（如果存在），否则返回null
+###### 提供操作键的方法：lowerKey，floorKey，ceilingKey和higherKey方法，它们分别返回小于，小于等于，大于等于，大于给定键的键
+###### 提供获取键集的方法：navigableKeySet、descendingKeySet分别获取正序/反序的键集
+###### 提供获取键值对的子集的方法
+#### 8.2.4.Dictionary
+###### Dictionary是JDK1.0定义的键值对的抽象类，方法全抽象，更像一个接口，但当时还没有接口的概念
 #### 8.2.5.HashMap
-###### HashMap继承于AbstractMap，但没有实现NavigableMap接口，因此HashMap的内容是“不保证次序的键值对”
-#### 8.2.6.WeakHashMap
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaGroupHashMap.jpg)
+###### HashMap继承于AbstractMap，但没有实现NavigableMap接口，因此HashMap的内容是“不保证次序的键值对”。它还实现了Cloneable，java.io.Serializable接口。它不是线程安全的，它的key和value都可以为null
+###### HashMap的实例有两个参数影响其性能：“初始容量”和“加载因子”。容量是哈希表中桶的数量，初始容量只是哈希表在创建是的容量。加载因子是一个阈值，当哈希表充满到这个阈值时，哈希表会扩容（rehash）
+###### HashMap有四个构造方法：HashMap();HashMap(int capacity);HashMap(int capacity, float loadFactor);HashMap(Map<? extends K, ? extends V> map)
+###### HashMap是一个散列表，通过拉链法解决哈希冲突。它包含几个重要的成员变量：<br>1.table是一个Entry[]数组类型，而Entry实际上是一个单向链表。哈希表的键值对都存储在Entry数组中<br>2.size是HashMap的大小，它是HashMap保存键值对的数量<br>3.threshold是HashMap的阈值，用于判断是否需要调整HashMap的容量（加倍）。threshold=容量*加载因子<br>4.loadFactor就是加载因子<br>5.modCount是用来实现fail-fast机制的
+###### HashMap包含三个集合，所以有三种方式的遍历
+#### 8.2.6.Hashtable
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaGroupHashtable.jpg)
+###### Hashtable和HashMap一样，是一个散列表，通过拉链法解决哈希冲突。Hashtable继承自Dictionary，实现了Map，Cloneable，java.io.Serializable接口。Hashtable是同步的，线程安全，且他的key和value不能为null，映射不是有序的
+###### Hashtable包含几个重要的成员变量：<br>1.table是一个Entry[]数组类型，而Entry实际上是一个单向链表。哈希表的键值对都存储在Entry数组中<br>2.count是Hashtable的大小，它是Hashtable保存键值对的数量<br>3.threshold是Hashtable的阈值，用于判断是否需要调整Hashtable的容量（加倍）。threshold=容量*加载因子<br>4.loadFactor就是加载因子<br>5.modCount是用来实现fail-fast机制的
+###### Hashtable内定义了Enumeration类，同时实现了Enumerator接口和Iterator接口，提供了通过elements()方法遍历Hashtable的接口和通过entrySet()遍历Hashtable的接口
+###### Hashtable可以通过键值对集合遍历（entrySet()方法）、键集合遍历（keySet()方法）、值集合遍历（value()方法）、Enumeration遍历键（Enumeration enu = table.keys()）、Enumeration遍历值（Enumeration enu = table.elements()）
+#### 8.2.7.TreeMap
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaGroupTreeMap.jpg)
+###### TreeMap继承于AbstractMap，且实现了NavigableMap接口，因此TreeMap中的内容是“有序的键值对”（通过红黑树实现）
+###### TreeMap包含几个重要的成员变量：<br>1.root是红黑树的根节点，他是Entry类型，Entry是红黑树的节点，它包含了红黑树的六个基本组成成分：key、value、left、right、parent、color。Entry是根据key进行排序<br>2.size是红黑树中节点的个数<br>3.comparator是用来红黑树用来进行排序的
+###### 
+#### 8.2.8.WeakHashMap
 ###### WeakHashMap继承与AbstractMap，它和HashMap的区别是WeakHashMap的键是弱键，会被GC
-#### 8.2.2.Hashtable
 #### 8.2.5.LinkedHashMap
 ### 8.3.Collection接口
-###### Collection是一个接口，是高度抽象出来的集合，它包含了集合的基本操作和属性。Collection包含了List和Set两大分支。List是一个有序的队列，每一个元素都有它的索引。第一个元素的索引值是0。
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaGroupCollection.bmp)
+###### public interface Collection<E> extends Iterable<E>,Collection接口的所有子类（直接子类和间接子类）都必须实现两种构造函数：不带参数的构造函数和参数为Collection的构造函数。带参数的构造函数，可以用来转换Collection的类型
+###### Collection是一个接口，是高度抽象出来的集合，它包含了集合的基本操作（添加，删除，清空，遍历，是否为空，获取大小，时候包含某元素）和属性。Collection包含了List和Set两大分支。List是一个有序的队列，每一个元素都有它的索引。第一个元素的索引值是0。Set是数学概念中的集合，Set中没有重复的元素
+#### 8.3.1.AbstractCollection抽象类
+###### AbstractCollection实现了Collection中除iterator()和size()之外的绝大部分方法，可以通过继承AbstractCollection省去重复编码。
 #### 8.3.1.List接口
-###### 可以存放重复的内容
+###### public interface List<E> extends Collection<E>{}，List是一个继承于Collection的接口，即List是集合中的一种。List是有序的队列，List中的每个元素都有一个索引；第一个元素的索引值是0，往后的元素的索引值依次+1。与Set不同，List可以存放重复的元素
+###### List除了包含Collection中的全部方法接口，由于List是有序队列，它还额外包含自己的API接口，主要有添加，删除，获取和修改指定位置的元素，获取List中的子队列等。
 #### 8.3.2.Set接口
-###### 不能存放重复的内容，重复的内容靠hashCode()和equals()两个方法区分
+###### public interface Set<E> extends Collection<E>{}
+###### Set的API和Collection完全一样。Set不能存放重复的内容，靠hashCode()和equals()两个方法判断内容是否重复
+
 #### 8.3.3.Queue接口
 ###### 队列接口
 ## 9.String
@@ -444,7 +471,6 @@ public synchronized void consume()
 解决了父类公共属性的注入问题：
 public abstract class fatherclass{
     private String commonproperty;
-
     @Autowire
     public void SetCommonproperty(String commonproperty){
          this.commonproperty = commonproperty;
