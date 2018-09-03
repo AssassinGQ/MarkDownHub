@@ -9,7 +9,7 @@
 #### 1.1.2.一致性（Consistency）：
 ###### 一个事务可以封装状态改变（除非它是一个只读的）。事务必须始终保持系统处于一致的状态，不管在任何给定的时间并发事务有多少。<br>也就是说：如果事务是并发多个，系统也必须如同串行事务一样操作。其主要特征是保护性和不变形，以转账案例为例，假设有五个账户，每个账户余额是100元，那么五个账户总额是500元，如果在这个5个账户之间同时发生多个转账，无论并发多少个，这5个账户总额也应该还是500元，这就是保护性和不变形。
 #### 1.1.3.隔离性（Isolation）：
-####### 隔离状态执行事务，使它们好像是在系统给定的时间内执行的唯一操作。如果有两个事务，运行在相同的时间内，执行相同的功能，事务的隔离性将确保每一事务在系统中认为只有个该事物在使用系统。这种属性有时称为串行化，为了防止事务操作间的混淆，必须串行化或序列化请求，是的在同一时间仅有一个请求用于同一数据。
+##### 隔离状态执行事务，使它们好像是在系统给定的时间内执行的唯一操作。如果有两个事务，运行在相同的时间内，执行相同的功能，事务的隔离性将确保每一事务在系统中认为只有个该事物在使用系统。这种属性有时称为串行化，为了防止事务操作间的混淆，必须串行化或序列化请求，是的在同一时间仅有一个请求用于同一数据。
 #### 1.1.4.持久性（Durability）：
 ###### 在事务完成以后，该事务对数据库所做的更改便持久的保存在数据库中了，并不会被回滚。
 #### 1.1.5.总结：
@@ -299,6 +299,7 @@ public synchronized void consume()
 ##### 3.1.7.11.2MSL定时器
 ###### 见3.1.7.5
 ## 4.zookeeper
+<h2 id='123'>4.zookeeper</h2>
 ### 4.1.概念
 ###### Zookeeper是一个分布式的，开放源码的分布式应用程序协调服务，是Google的Chubby一个开源的实现，他是集群的管理者，监视着集群中各个节点的状态，根据节点提交的反馈，进行下一步合理操作，最终，将简单易用的接口和性能高效、功能稳定的系统提供给用户
 ### 4.2.Zookeeper提供了什么
@@ -526,13 +527,34 @@ public static Integer[] vectorToArray(ArrayList<Integer> v){
 |peek()|peekFirst()|
 ###### LinkedList遍历方式：<br>1.通过迭代器<br>2.随机访问<br>3.for循环遍历<br>4.用pollFirst()遍历<br>5.用pollLast()遍历<br>6.用removeFirst()遍历<br>7.用removeLast()遍历
 #### 8.4.4..Vector
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaGroupVector.jpg)
+###### public class Vector<E> extends AbstractList<E> implements List<E>, RandomAccess, Clonneable, java.io.Serializable{}
+###### Vector是矢量队列，是JDK1.0版本添加的类，继承于AbstractList，实现了List（它是一个队列，支持添加，删除，修改，遍历），RandomAccess（支持随机访问），Cloneable（能被克隆）这些接口。是同步的，大多数方法都是多线程安全
+###### Vector的数据结构额ArrayList差不多，它包含了三个成员变量：<br>1.elementData是Object[]类型的数组，它保存了添加到Vector中的元素，是一个动态数组，如果没有指定，默认大小为10<br>2.elementCount是动态数组的实际大小<br>3.capacityIncrement是动态数组的增长系数。如果在创建Vector时，指定了capacityIncrement是动态数组的增长系数，则每次增加的大小都是capacityIncrement
+###### Vector可以用迭代器遍历、随机访问、for循环访问、Enumeration遍历
 #### 8.4.5.Stack
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaGroupStack.jpg)
+###### public class Stack<E> extends Vector<E>{}
+###### Stack是栈，特征是先进后出，Java中的Stack继承于Vector，所以Stack也是通过数组实现，而非链表。当然我们也可以将LinkedList当做栈来使用
+###### Stack通过Vector实现，代码非常简单
 #### 8.4.6.List总结
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaGroupList.jpg)
+##### 8.4.6.1.概括
+###### List是继承于Collection的接口，代表着有序的队列
+###### AbstractList是一个抽象类，继承于AbStractCollection，它实现了List接口中出size()和get(int location)以外的所有方法
+###### AbstractSequentialList是一个抽象类，继承于AbstractList，实现了链表中根据index索引值操作链表的全部方法
+###### ArrayList，LinkedList，Vector，Stack是List的四个实现类。ArrayList是一个数组队列，相当于动态数组，它由数组实现，随机访问效率高，随机插入、随机删除效率低；LinkedList是一个双向链表，它也可以被当做栈、队列或双端队列进行操作，他的随机访问效率略低，但随机插入、随机删除效率高；Vector是矢量队列，和ArrayList一样，他也是一个动态数组，由数组实现。但ArrayList非线程安全，Vector线程安全；Stack是栈，继承于Vector。
+##### 8.4.6.4.Vector和ArrayList比较
+###### 相同处：他们都是List，都继承于AbstractList，并实现了List接口；都实现了RandomAccress和Cloneable接口；都通过数组实现，本质上都是动态数组；默认的数组容量都是10；都指出Iterator和ListIterator遍历
+###### 不同处1：线程安全不一样：ArrayList是非线程安全，Vector是线程安全
+###### 不同处2：对序列化的支持不同，ArrayList支持序列化，而Vector不支持
+###### 不同处3：构造函数个数不同，Vector增加了一个可以指定容量增加系数的构造函数
+###### 不同处4：容量增加方式不同：ArrayList新容量=(原容量*3)/2+1；Vector容量增长与增长系数有关，若指定增长系数则新容量=原容量+增长系数，若没有指定增长系数，则新容量=原容量*2
+###### 不同处5：Enumeration支持Enum遍历，而ArrayList不支持
 ### 8.5.Set
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaGroupSet.jpg)
 #### 8.5.1..HashSet
 #### 8.5.2..TreeSet
-### 8.6.Queue
-###### 队列接口
 ## 9.String
 ## 10.数据结构（数组，链表，队列，栈，树，图，堆，散列表，红黑树）
 ## 11.JVM，GC
