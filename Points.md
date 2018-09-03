@@ -381,7 +381,7 @@ public synchronized void consume()
 ### 8.1.Iterator接口
 ###### Iterator接口，这是一个用于遍历集合中元素的接口，主要包含hashNext(),next(),remove()三种方法。他的一个子接口ListIterator在它的基础上又添加了三种方法，分别是add(),previous(),hasPrevious()。也就是说如果实现Iterator接口，那么在遍历集合中元素的时候，只能往后遍历，被遍历后的元素不会再遍历到，通常无序集合实现的都是这个接口，比如HashSet，HashMap；而那些元素有序的集合，实现的一般都是ListIterator接口，实现这个接口的集合可以双向遍历，比如ArrayList<br>Collection依赖于Iterator，是因为Collection的实现类都要实现iterator()函数，返回一个Iterator对象。
 ### 8.2.Map接口
-![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaGroupMap.bmp)
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaGroupMap.jpg)
 ###### Collection属于单值的操作，是单列集合，Map中的每个元素都是用key-value的形式存储在集合中，是双列集合。Map没有直接取出元素的方法，而是先转成Set集合，再通过迭代获取元素
 ###### Map是个映射接口，即key-value键值对，Map中的每一个元素包含一个key和一个value，key不能重复，每个key最多只能映射一个值，有以下实现：HashMap、Hashtable、Properties、LinkedHashMap、IdentityHashMap、TreeMap、WeakHashMap、ConcurrentHashMap。有一个抽象类，AbstractMap，它实现了Map接口中大部分的API。
 ###### Map接口提供三种Collection视图。允许以键集、值集合键值映射关系集的形式查看映射的内容。由于键值的唯一性，所以键集、键值集都是Set，而值集是Collection
@@ -415,26 +415,123 @@ public synchronized void consume()
 ###### Hashtable可以通过键值对集合遍历（entrySet()方法）、键集合遍历（keySet()方法）、值集合遍历（value()方法）、Enumeration遍历键（Enumeration enu = table.keys()）、Enumeration遍历值（Enumeration enu = table.elements()）
 #### 8.2.7.TreeMap
 ![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaGroupTreeMap.jpg)
-###### TreeMap继承于AbstractMap，且实现了NavigableMap接口，因此TreeMap中的内容是“有序的键值对”（通过红黑树实现）
+###### TreeMap继承于AbstractMap，且实现了NavigableMap接口，因此TreeMap中的内容是“有序的键值对”（通过红黑树实现）；实现了Cloneable接口，实现了Serializable接口
 ###### TreeMap包含几个重要的成员变量：<br>1.root是红黑树的根节点，他是Entry类型，Entry是红黑树的节点，它包含了红黑树的六个基本组成成分：key、value、left、right、parent、color。Entry是根据key进行排序<br>2.size是红黑树中节点的个数<br>3.comparator是用来红黑树用来进行排序的
-###### 
+###### 看源码吧~~~~
 #### 8.2.8.WeakHashMap
-###### WeakHashMap继承与AbstractMap，它和HashMap的区别是WeakHashMap的键是弱键，会被GC
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaGroupWeakHashMap.jpg)
+###### WeakHashMap和HashMap一样，是一个散列表，存储键值对，键和值都可以为null。WeakHashMap是不同步的，线程不安全
+###### WeakHashMap继承与AbstractMap，它和HashMap的区别是WeakHashMap的键是弱键，会被GC，准确地说，其存储的映射的存在不会阻止GC回收。这就使该键可以被终止，被回收；该键一旦被终止时，它对应的键值对就从映射中有效的移除了。弱键的原理，大致上就是通过WeakReference和ReferenceQueue实现的。WeakHashMap的key是弱键，即是WeakReference类型的；ReferenceQueue是一个队列，它会保存被GC回收的弱键：<br>当某弱键不再被其他对象引用，并被GC回收时，在GC该弱键时，这个弱键也同时会被添加到ReferenceQueue队列中<br>当下一次我们需要操作WeakHashMap时，会先同步table个queue。table中保存了全部键值对，而queue中保存被GC回收的键值对，同步他们，就是删除table中被GC回收的键值对
+###### WeakHashMap中有几个重要的成员变量：<br>1.table为一个Entry[]数组类型，用来存储键值对<br>2.size是散列表中保存键值对的数量<br>3.threshold是散列表的阈值，关系到是否需要调整散列表的大小，threshold=容量*loadFactory<br>4.loadFactor为加载因子，关系到是否需要调整散列表的大小<br>5.modCount是用来实现fail-fast机制的<br>6.queue是用来保存已被GC清除的弱引用的键
 #### 8.2.5.LinkedHashMap
+#### 8.2.6.Map总结
+##### 8.2.6.1.概括
+###### (1)Map是键值对映射的抽象接口<br>(2)AbstractMap实现了Map中的绝大部分函数接口。它减少了Map的实现类的重复编码<br>(3)SortedMap是有序的键值对映射接口<br>(4)NavigableMap是继承与SortedMap的，支持导航函数的接口<br>(5)HashMap是基于拉链法实现的散列表，一般用于单线程程序中；Hashtable也是基于拉链法实现的散列表，一般用于多线程程序中（其实不用）；WeakHashMap也是基于拉链法实现的散列表，也踊跃单线程程序中，但他的见识弱键；TreeMap是有序的散列表，通过红黑树实现，用于单线程
+##### 8.2.6.2.HashMap与Hashtable
+###### 相同点：HashMap和Hashtable都是存储键值对的散列表，都采用拉链法解决哈希冲突。散列表的结构都是一个Entry数组，而Entry是一个单向链表。添加键值对是，先根据key值计算出哈希值，再计算出数组索引，然后遍历单向链表，将key和链表中的每个节点的key进行对比，若key已经存在，则替换，都在新建键值对节点，将该节点插入到单向链表表头位置。删除键值对，同样先计算key的哈希值，然后计算索引，然后遍历单向链表，如果找到节点，即删除
+###### 不同点1：HashMap继承于AbstractMap（在JDK1.2新增的类），实现了Map、Cloneable、java.io.Serializable接口，而Hashtable继承于Dictionary，实现了Map、Cloneable、java.io.Serializable接口。Dictionary是一个抽象类，继承于Object类，没有实现任何接口，是在JDK1.0时引入的。虽然Dictionary也支持添加键值对，获取值，获取大小等基本操作，但它的API比Map少，而且Dictionary一般是通过Enumeration（枚举类）去遍历，Map则是通过Iterator（迭代器）去遍历。由于Hashtable也实现了Map，所以Hashtable既可以用Enumeration遍历，也可以用Iterator遍历
+###### 不同点2：Hashtable几乎所有的函数都是同步的，即它是线程安全的，支持多线程；而HashMap函数时非同步的，它不是线程安全的。可以使用Collections.synchronizedMap静态方法，或者直接使用JDK5.0后提供额java.util.concurrent包里的ConcurrentHashMap
+###### 不同点3：HashMap的键值都可以为null（key为null的键值对会固定插入到table[0]位置，即HashMap散列表的第一个位置），Hashtable的键值都不可以为null
+###### 不同点4：HashMap只支持Iterator遍历，Hashtable同时支持Enumeration和Iterator遍历；两者Iterator遍历方式也不同，HashMap是从前向后遍历table，然后再对单向链表从表头开始遍历，Hashtable是从后向前遍历table，然后再对单向链表从表头开始遍历
+###### 不同点5：HashMap的默认容量是16，增加容量时新容量为原容量的两倍（可以减少扩容时的计算，后面详述todo）；Hashtable的默认容量是11，增加容量时新容量为原容量的两倍加一
+###### 不同点6：键值对的hash值算法不同，HashMap使用自定义的哈希算法，Hashtable直接使用key的hashCode()
+###### 不同点7：Hashtable支持contains(Object value)，而且重写了toString()方法；HashMap不支持contains(Object value)方法（使用containsValue(Object value)），没有重写toString()方法
+##### 8.2.6.3.HashMap和WeakHashMap
+###### 相同点：都是散列表，都保存键值对，都继承于AbstractMap，并且实现Map，构造函数都一样，默认容量都是16，默认加载因子都是0.75，都允许null作为key和value，都是非同步的
+###### 不同点1：HashMap实现了Cloneable和Serializable接口，而WeakHashMap没有
+###### 不同点2：WeakHashMap是弱键，它的键是弱引用，而HashMap的键是强引用
 ### 8.3.Collection接口
-![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaGroupCollection.bmp)
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaGroupCollection.jpg)
 ###### public interface Collection<E> extends Iterable<E>,Collection接口的所有子类（直接子类和间接子类）都必须实现两种构造函数：不带参数的构造函数和参数为Collection的构造函数。带参数的构造函数，可以用来转换Collection的类型
 ###### Collection是一个接口，是高度抽象出来的集合，它包含了集合的基本操作（添加，删除，清空，遍历，是否为空，获取大小，时候包含某元素）和属性。Collection包含了List和Set两大分支。List是一个有序的队列，每一个元素都有它的索引。第一个元素的索引值是0。Set是数学概念中的集合，Set中没有重复的元素
-#### 8.3.1.AbstractCollection抽象类
-###### AbstractCollection实现了Collection中除iterator()和size()之外的绝大部分方法，可以通过继承AbstractCollection省去重复编码。
-#### 8.3.1.List接口
+### 8.3.1.List接口
 ###### public interface List<E> extends Collection<E>{}，List是一个继承于Collection的接口，即List是集合中的一种。List是有序的队列，List中的每个元素都有一个索引；第一个元素的索引值是0，往后的元素的索引值依次+1。与Set不同，List可以存放重复的元素
 ###### List除了包含Collection中的全部方法接口，由于List是有序队列，它还额外包含自己的API接口，主要有添加，删除，获取和修改指定位置的元素，获取List中的子队列等。
 #### 8.3.2.Set接口
 ###### public interface Set<E> extends Collection<E>{}
 ###### Set的API和Collection完全一样。Set不能存放重复的内容，靠hashCode()和equals()两个方法判断内容是否重复
-
-#### 8.3.3.Queue接口
+#### 8.3.3.AbstractCollection
+###### public abstract class AbstractCollection<E> implements Collection<E>{}
+###### AbstractCollection实现了Collection中除iterator()和size()之外的绝大部分方法，可以通过继承AbstractCollection省去重复编码。
+#### 8.3.4.AbstractList
+###### public abstract class AbstractList<E> extends AbstractCollection<E> implements List<E>{}
+###### AbstractList是一个继承于AbstractCollection，并且实现List接口的抽象类。它实现了List中除了size()、get(int location)之外的所有方法。AbstractList的作用在于实现了List接口中的大部分方法，从而方便其他类继承实现List。和AbstractCollection相比，AbstractList中，对iterator()接口进行了实现
+#### 8.3.5.AbstractSet
+###### public abstract class AbstractSet<E> extends AbstractCollection<E> implements Set<E>{}
+###### AbstractSet是一个继承于AbstractCollection，并且实现Set接口的抽象类。由于Set接口和Collection接口中的API完全一样，Set没有自己单独的API，所以AbstractSet和AbstractCollection一样，实现了实现了Set中除了size()和iterator()之外的所有方法。
+#### 8.3.6.Iterator
+###### public interface Iterator<E>{}
+###### Iterator是一个接口，他是集合的迭代器。集合可以通过Iterator去遍历集合中的元素。Iterator提供的API接口，包括：是否存在下一个元素，获取下一个元素，删除当前元素。
+###### fail-fast:Iterator遍历Collection是fail-fast机制的，即，当某一个线程A通过iterator去遍历某集合的过程中，若其他线程B改变了集合的内容，那么线程A访问集合时就会抛出ConcurrentModificationException异常，产生fail-fast事件。fail-fast会在后面详述
+#### 8.3.7 ListIterator
+###### public interface ListIterator<E> extends Iterator<E>{}
+###### ListIterator是一个继承于Iterator的接口，他是队列迭代器，专门用于遍历List，能提供向前/向后遍历。相比于Iterator，它新增了添加元素，是否存在上一个元素，获取上一个元素等等API接口
+### 8.4.List
+#### 8.4.1.ArrayList
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaGroupArrayList.jpg)
+###### ArrayList是一个数组队列，相当于动态数组，与Java中的数组相比，它的容量能动态增大。它继承与AbstractList，实现了List。实现了RandomAccess接口，即提供了随机访问功能。实现了Cloneable接口，覆盖了clone()方法，能被克隆，实现了Serializable接口，即支持序列化。和Vector不同，ArrayList的操作不是线程安全的。
+###### ArrayList包含了两个重要的对象elementData和size。<br>elementData是“Object[]类型的数组”,它保存了添加到ArrayList中的元素。实际上elementData是一个动态数组，我们能通过构造函数ArrayList(int initialCapacity)来设置他的初始容量，如果使用没有参数的构造函数，默认的initialCapacity为10。elementData的大小会根据ArrayList的容量增加而动态增长（ensureCapacity()方法）<br>size是动态数组的实际大小
+###### ArrList可以通过三种方式访问：随机访问，for循环遍历，通过迭代器访问，三种方式依次效率变低
+###### ArrayList提供了两个toArray()函数：<br>Object[] toArray()，会抛出java.lang.ClassCastException异常，是在Object[]转化为其他类型是造成的，因为Java不支持向下转型<br><T> T[] toArray(T[] contents)不会抛出异常
+```
+//toArray(T[] contents)调用方式一
+public static Integer[] vectorToArray(ArrayList<Integer> v){
+    Integer[] newText = new Integer[v.size()];
+    v.toArray(newText);
+    return newText;
+}
+//toArray(T[] contents)调用方式二，最常用
+public static Integer[] vectorToArray(ArrayList<Integer> v){
+    Integer[] newText = (Integer[])v.toArray(new Integer[0]);
+    return newText;
+}
+//toArray(T[] contents)调用方式三
+public static Integer[] vectorToArray(ArrayList<Integer> v){
+    Integer[] newtext = new Integer[v.size];
+    Integer[] newStrings = (Integer[])v.toArray(newText);
+    return newStrings;
+}
+```
+#### 8.4.2.fail-fast总结
+###### fail-fast简介：fail-fast机制是java集合中的一种错误机制，当多个线程对同一个集合的内容进行操作时，有可能就会产生fail-fast事件，如线程A正在通过Iterator遍历集合，线程B改变了集合的内容，那么线程A中就会抛出ConcurrentModificationException，产生fail-fast事件
+###### fail-fast原理：通过modCount变量值是否改变来保证在Iterator遍历集合时集合数据是否被改变。无论是add(),remove()还是clear()，都会改变modCount的值
+###### fail-fast解决：fail-fast机制是一种错误检测机制，它只能用来被检测错误，因为JDK并不保证fail-fast机制一定会发生。若在多线程环境下使用fail-fast机制的集合，建议使用java.util.concurrent包下的类去取代java.util包下的类。java.util.concurrent包中比如CopyOnWriteArrayList中实现了一个ListIterator，名为CopyOnWriteIterator，在新建这个Iterator时，会将集合中的元素保存在一个新的拷贝数组中，遍历的是拷贝数组
+#### 8.4.3.LinkedList
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JavaGroupLinkedList.jpg)
+###### public class LinkedList<E> extends AbstractSequentialList<E> implements List<E>, Deque<E>, Cloneable, java.io.Serializable{}
+###### AbstractSequentialList实现了get(int index),set(int index, E element),add(int index, E element)和remove(int index)这些函数。这些接口都是随机访问List的；我们若需要通过AbstractSequentialList自己实现一个列表，只需要扩展此类，并提供listIterator()和size()方法的实现即可。若要实现不可修改的列表，则需要实现列表迭代器的hasNext、next、hasPrevious、previous和index方法即可。
+###### LinkedList的本质是双向链表，包含两个重要的成员：<br>1.header是双向链表的表头，它是双向链表节点所对应的类Entry的实例。Entry中包含成员变量：previous，next，element，分别表示上一个节点，下一个节点，当前节点所包含的值<br>2.size是双向链表中节点的个数
+###### LinkedList既然是双向链表，那么它的顺序访问会非常高效，而随机访问效率比较低。但LinkedList又实现了List接口{也就是实现了get(int index), remove(int index)等根据索引值来获取删除节点的函数}，LinkedList用来将双向链表和索引值联系起来的原理非常简单，是通过一个计数索引值来实现的。例如我们调用get(int index)时，首先会比较index和双向链表长度的1/2，若前者大，则从链表头开始往后查找，直到找到index位置，否则从链表末尾开始向前查找
+###### 由于LinkedList实现了Deque接口，而Deque接口定义了在双端队列两端访问元素的方法。提供插入、移除和检查元素的防范。没中方法都存在两种形式：一种形式操作失败时抛出异常，另一种形式返回一个特殊值（null或false，具体取决于操作）
+| |第一个元素（头部）|最后一个元素（尾部）|
+|------|------|------|
+| |抛出异常|特殊值|抛出异常|特殊值|
+|插入|addFirst(e)|offerFirst(e)|addLast(e)|offerLast(e)|
+|移除|removeFirst()|pollFirst()|removeLast()|pollLast()|
+|检查|getFirst()|peekFirst()|getLast()|peekLast()|
+###### LinkedList可以作为FIFO的队列，作为队列时，下表的方法等价：
+|队列方法|等效方法|
+|------|------|
+|add(e)|addLast(e)|
+|offer(e)|offerLast(e)|
+|remove()|removeFirst()|
+|poll()|pollFirst()|
+|element()|getFirst()|
+|peek()|peekFirst()|
+###### LinkedList可以作为LIFO的栈，作为栈时，下表方法等价：
+|队列方法|等效方法|
+|------|------|
+|push(e)|addFirst(e)|
+|pop()|removeFirst(e)|
+|peek()|peekFirst()|
+###### LinkedList遍历方式：<br>1.通过迭代器<br>2.随机访问<br>3.for循环遍历<br>4.用pollFirst()遍历<br>5.用pollLast()遍历<br>6.用removeFirst()遍历<br>7.用removeLast()遍历
+#### 8.4.4..Vector
+#### 8.4.5.Stack
+#### 8.4.6.List总结
+### 8.5.Set
+#### 8.5.1..HashSet
+#### 8.5.2..TreeSet
+### 8.6.Queue
 ###### 队列接口
 ## 9.String
 ## 10.数据结构（数组，链表，队列，栈，树，图，堆，散列表，红黑树）
