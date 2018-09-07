@@ -575,9 +575,133 @@ public static Integer[] vectorToArray(ArrayList<Integer> v){
 ## 10.数据结构（数组，链表，队列，栈，树，图，堆，散列表，红黑树）
 ## 11.JVM，GC
 ### 11.1.基本原理
+#### 11.1.1.Java程序从编译到运行的过程
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMCodeBuilding.png)
+#### 11.1.2.JVM的内部结构
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMStructure.png)
+###### 上图是JVM的内部结构，class文件被jvm装在以后，经过jvm内存空间分配，最终是由执行引擎完成class文件的执行，当然这个过程还有其他角色模块的协助配合才能让一个java程序成功的运行，下面就详细介绍这些模板，他们也是后面学习jvm最重要的部分
+###### JVM的内存空间包含：方法区、java堆、java栈、本地方法栈。<br>方法区是各个线程共享的区域，存放类信息、常量、静态变量；<br>java堆是各个线程共享的区域，我们的类的实例就放在这个区域，可以想象你的一个系统会产生很多实例，因此java堆的空间也是最大的。如果java堆空间不足，程序会报出OOM异常；<br>java栈时每个线程私有的区域，它的生命周期与线程相同，一个线程对应一个java栈，每执行一个方法就会往栈中压入一个元素，这个元素叫栈帧，而栈帧中包括了方法中的局部变量、用于存放中间状态值的操作栈，这里面有很多细节，后续展开。如果Java栈空间不足，程序会抛出StackOverflowError异常。递归容易发生栈溢出<br.本地方法栈角色和java栈类似，只不过它是用来表示执行本地方法的，本地方法栈存放的方法调用本地方法接口，最终调用本地方法库，实现与操作系统、硬件交互的目的；<br>PC寄存器用来控制程序指令的执行顺序，线程独占；<br>执行引擎当然就是根据PV寄存器调配的指令顺序，依次执行程序指令
 ### 11.2.内存模型、可见性、指令重排序
+#### 11.2.1.内存模型
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMThreadComm1.png)
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMThreadComm2.png)
+###### 上图1中，我们把java堆称为主存，而每一个线程都有自己的私有内存空间，称为工作内存
+###### java线程要想另外一个线程进行通信，线程首先需要更新自己的工作内存，然后将工作内存的变化刷新到主存中。线程2从主存更新自己的工作内存，然后从自己的工作内存读取的数据就是线程1更新的数据。而主存与工作内存之间的交互，则需要Java内存模型（JMM）来管理，如上图2
+###### 将线程1需要将一个更新后的变量值刷新到主存中时，需要进过两个步骤：<br>1.工作内存执行store操作；<br>2.主内存执行write操作；<br>当线程2需要从主内存中读取变量的最新值时，同样需要经过两个步骤：<br>1.主内存执行read操作，将变量值从主存中读取出来；<br>2.工作内存执行load操作，将读取出来的变量值更新到本地内存的副本；
+#### 11.2.2.可见性
+###### Java中有一个关键字volatile，它有什么用呢？这个答案其实就在上述java线程间通信机制中，我们想象一下下，由于工作内存这个中间层的出现，线程1和线程2必然存在延迟的问题，例如线程1在工作内存中更新了变量，但还没有刷新到主内存，而此时线程2获取到的变量值就是未更新的变量值，又或者线程1成功将变量更新到主内存，但线程2依然使用自己工作内存中的变量值，同样会出问题。不管出现哪种情况都可以导致线程间的通信不能达到预期的目的。例如以下例子：
+```
+boolean stop = false;
+//线程1
+while(!stop){
+    doSommeThing();
+}
+//线程2
+stop = false;
+```
+###### 这个经典的例子表示线程2通过修改stop的值，控制线程1中断，但在真实环境中可能会出现意想不到的结果，线程2在执行之后，线程1并没有立刻中断甚至一直不会中断。出现这种现象的原因就是线程2对线程1的变量更新无法第一时间获取到
+###### 但这一切等到volatile出现后，再也不是问题，volatile保证两件事：<br>1.线程1工作内存中的变量更新会强制立即写入到主内存<br>2.线程2工作内存中的变量会强制立即实现，这使得线程2必须去主内存中获取最新的变量值<br>所以volatile保证了变量的可变性，因为线程1对变量的修改能第一时间让线程2可见
+#### 11.2.3.指令重排序，
+###### 关于指令的排序先看一段代码
+```
+int a = 0;
+boolean flag = false;
+//线程1
+public void writer(){
+    a = 1;
+    flag = true;
+}
+//线程2
+public void reader(){
+    if(flag){
+        int i = a+1;
+        ......
+    }
+}
+```
+###### 线程1依次执行a=1,,flag = true;线程2判断flag=true后，设置i=a+1，根据代码语义，我们可能会推断此时i的值等于2，因为线程2在判断flag=true时，线程1已经执行了a=1；所以i的值等于a+1=2；但真实情况却并不一定如此，引起此问题的原因是线程1内部的两条语句a=1;flag=true；可能被重新排序执行，如图：
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMCodeReSort1.png)
+###### 这就是指令重排序的简单演示，两个赋值语句尽管他们的代码吮吸是一前一后，但真正执行时却不一定按照代码顺序执行。代码重排序有一套严格的指令重排序规则，下图显示了一个java程序从编译到执行会经历那些重排序：
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMCodeReSort2.png)
+###### 这个流程中，第一步属于编译器的重排序，编译器重排序会按JMM的规范严格执行，换言之编译器重排序一般不会对程序的正确逻辑造成印象。第二、三步属于处理器重排序，处理器重排序JMM就不好管理了，但它会要求java编译器在生成指令时加入内存屏障，内存屏障的作用就是把不能重排序的指令保护起来，那么处理器在遇到内存屏障保护的指令时就不会对它进行重排序。
+###### JMM中有三种情况，任意改变一个代码的吮吸，结果都会大不相同，对于这样的逻辑代码，是不会被重排序的。注意这里是指单线程中不会被重排序，如果在多线程环境下，还是会产生逻辑问题，例如一开始举的例子
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMCodeReSort3.png)
 ### 11.3.配置参数
+###### JVM配置参数分为三类参数：<br>1.跟踪参数<br>2.堆分配参数<br>3.栈分配参数<br>这三类三数分别用于跟踪监控JVM状态，分配堆内存以及分配栈内存
+#### 11.3.1.跟踪参数
+###### 跟踪参数用于跟踪监控JVM，往往被开发人员用于JVM调优以及故障排查。
+##### 11.3.1.1.当发生GC时，打印GC简要信息
+###### -XX:+PrintGC或-verbose:gc参数；这两个配置参数效果是一样的，都是在发生GC时打印出简要的信息，例如执行代码：
+```
+public static void main(String[] args){
+    byte[] bytes = null;
+    for(int i = 0; i < 100; i++){
+        bytes = new byte[1*1024*1024];
+    }
+}
+```
+###### 这个程序连续创建了100个1M的数组对象，使用-XX:+PrintGC或-verbose:gc参数执行该程序，即可查看GC情况：
+> [GC (Allocation Failure) 32686K->1648K(123904K), 0.0007230 secs]
+> [GC (Allocation Failure) 34034K->1600K(123904K), 0.0009652 secs]
+> [GC (Allocation Failure) 33980K->1632K(123904K), 0.0005306 secs]
+###### 我们可以看到程序执行了三次GC（minor GC），这三次GC都是新生代GC，因为这个程序每次创建新的数组对象，都会把新的对象赋给bytes变量，而老的对象没有任意对象引用它，老对象会变得不可达。32686K表示回收前，对象占用空间。1648K表示回收后，对象占用空间。123904K表示还有多少空间可用。0.0007230secs表示这次垃圾回收花的时间。
+##### 11.3.1.2.打印GC的详细信息以及堆使用详细信息
+###### -XX:+PrintGCDetail参数：
+###### 还是使用上面的代码，获得如下结果：
+> [GC (Allocation Failure) [PSYoungGen: 32686K->1656K(37888K)] 32686K->1664K(123904K), 0.0342788 secs] [Times: user=0.00 sys=0.00, real=0.03 secs]
+> [GC (Allocation Failure) [PSYoungGen: 34042K->1624K(70656K)] 34050K->1632K(156672K), 0.0013466 secs] [Times: user=0.00 sys=0.00, real=0.00 secs]
+> Heap
+> PSYoungGen total 70656K, used 43118K [0x00000000d6100000, 0x00000000dab00000, 0x0000000100000000)
+> eden space 65536K, 63% used [0x00000000d6100000,0x00000000d8985ac8,0x00000000da100000)
+> from space 5120K, 31% used [0x00000000da600000,0x00000000da796020,0x00000000dab00000)
+> to space 5120K, 0% used [0x00000000da100000,0x00000000da100000,0x00000000da600000)
+> ParOldGen total 86016K, used 8K [0x0000000082200000, 0x0000000087600000, 0x00000000d6100000)
+> object space 86016K, 0% used [0x0000000082200000,0x0000000082202000,0x0000000087600000)
+> Metaspace used 2669K, capacity 4486K, committed 4864K, reserved 1056768K
+> class space used 288K, capacity 386K, committed 512K, reserved 1048576K
+###### 我们看到除了打印GC信息之外，还显示是了堆使用情况，堆分为新生代、老年代、元空间。注意这里没有永久区了，永久区在java8已经移除，原来放在永久区的常量、字符串静态变量都移到了元空间，并使用本地内存。<br>新生代当中又分为伊甸区（eden）和幸存区（from和to），从上面打印的内容可以看到新生代总大小为70656K，使用了43118K，细心的同学的可能会发现eden+from+to=65536K+5120K+5120K=75776 并不等于总大小70656K，这是为什么呢？这是因为新生代的垃圾回收算法是采用复制算法，简单的说就是在from和to之间来回复制（复制过程中再把不可达的对象回收掉），所以必须保证其中一个区是空的，这样才能有预留空间存放复制过来的数据，所以新生代的总大小其实等于eden+from（或to）=65536K+5120K=70656k。
+##### 11.3.1.3.使用外部文件记录GC的日志
+###### -Xloggc:log/gc.log
+###### 这是一个非常有用的参数，它可以把GC的日志记录到外部文件中，这在生产环境进行故障排查时尤为重要，当java程序出现OOM时，总希望看到当时垃圾回收的情况，通过这个参数就可以把GC的日志记录下来，便于排查问题，当然也可以做日常JVM监控
+##### 11.3.1.4.监控类的加载
+###### -XX:+TraceClassLoading；使用这个参数可以监控java程序加载的类
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMArgs1.png)
+#### 11.3.2.堆分配参数
+###### 可以用以下代码打印出目前内存使用的情况：
+```
+public static void main(String[] args){
+  System.out.println("最大堆：" + Runtime.getRuntime().maxMemory()/1024/1024 + "M");
+  System.out.println("空闲堆：" + Runtime.getRuntime().freeMemory()/1024/1024 + "M");
+  System.out.println("总的堆：" + Runtime.getRuntime().totalMemory()/1024/1024 + "M");
+}
+```
+###### -Xmx参数：指定堆的最大大小，表示java程序最大能够使用的内存大小，如果超过这个大小，那么java汇报oom错误，空闲堆表示程序已经分配的内存大小减去已经使用的内存大小，而总的堆大小表示目前程序已经配置到多少内存大小，一般而言程序一启动，会按照-Xmx5m先分配5M的空间，这时总的堆大小就是5M
+###### -Xms参数：指定堆的初始大小
+###### -Xmn参数：设置年轻代的大小。例如：-Xmx20m -Xms5m -Xmn2m -XX:+PrintGCDetails，得到如下结果：
+> 最大堆：19.5M
+> 空闲堆：4.720428466796875M
+> 总的堆：5.5M 
+> Heap
+> PSYoungGen total 1536K, used 819K [0x00000000ffe00000, 0x0000000100000000, 0x0000000100000000)
+> eden space 1024K, 79% used [0x00000000ffe00000,0x00000000ffeccc80,0x00000000fff00000)
+> from space 512K, 0% used [0x00000000fff80000,0x00000000fff80000,0x0000000100000000)
+> to space 512K, 0% used [0x00000000fff00000,0x00000000fff00000,0x00000000fff80000)
+> ParOldGen total 4096K, used 0K [0x00000000fec00000, 0x00000000ff000000, 0x00000000ffe00000)
+> object space 4096K, 0% used [0x00000000fec00000,0x00000000fec00000,0x00000000ff000000)
+> Metaspace used 2723K, capacity 4486K, committed 4864K, reserved 1056768K
+> class space used 293K, capacity 386K, committed 512K, reserved 1048576K
+###### 可以看到新生代总大小：eden+from+to=1024K+512K+512K=2M，和-Xmn相对应
+###### -NewRatio：设置新生代（eden+from+to）和老年代（不包含永久区）的比值，比如NewRatio=4，则新生代：老年代=1:4
+###### -SurvivorRatio：设置Eden和Survivor区的大小比值，比如SurvivorRatio=8，则from:to:Eden=1:1:8
+###### -XX:+HeapDumpOnOutOfMemoryError、-XX:+HeapDumpPath这两个参数可以实现在发生OOM异常时把堆栈信息打印到外部文件
+#### 11.3.3.永久区分配参数
+###### -XX:PermSize参数：设置永久区的初始空间大小
+###### -XX:MaxPermSize参数：设置永久区的最大空间大小
+###### 他们表示一个系统可以容纳多少个类型，一般空间比较小。在java1.8以后，永久区被移到元数据区，使用本地内存，所以这两个参数也不建议再使用
+#### 11.3.4.栈分配参数
+###### -Xss参数：设置每个线程的堆栈大小，通常只有几百K，决定了函数调用的深度，每个线程都有自己独立的栈空间。如果函数调用太深，超过了栈的大小，则会抛出java.lang.StackOverflowError，通常我们遇到这种错误，不是去调整-Xss参数，而是应该去调查函数调用太深的原因
 ### 11.4.垃圾回收算法
+TBC
 ### 11.5.垃圾回收器
 ### 11.6.类加载器原理
 ### 11.7.性能监控工具
