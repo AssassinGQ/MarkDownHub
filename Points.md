@@ -701,8 +701,70 @@ public static void main(String[] args){
 #### 11.3.4.栈分配参数
 ###### -Xss参数：设置每个线程的堆栈大小，通常只有几百K，决定了函数调用的深度，每个线程都有自己独立的栈空间。如果函数调用太深，超过了栈的大小，则会抛出java.lang.StackOverflowError，通常我们遇到这种错误，不是去调整-Xss参数，而是应该去调查函数调用太深的原因
 ### 11.4.垃圾回收算法
-#### 
+#### 11.4.1.stop the world
+###### stop the world（STW）会在执行某一个垃圾回收算法的时候产生，JVM为了执行垃圾回收，会暂停java应用程序的执行，等垃圾回收完成后，再继续运行。如果你使用JMeter测试过java程序，你可能会发现在测试过程中，java程序有不规则的停顿现象，其实这就是stop the world，停顿的时候JVM是在做垃圾回收。所以尽可能减少STW的时间就是我们优化JVM的主要目标
+#### 11.4.2.引用计数法
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMGCReferenceCount1.png)
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMGCReferenceCount2.png)
+###### 引用计数法顾名思义，就是对一个对象被引用的次数进行计数，当增加一个引用，引用计数就加一，减少一个引用，引用计数就减一
+###### 引用计数算法原理非常简单，是最原始的回收算法， 但是java中没有使用这种算法，原因有两个：一是频繁的计数影响性能，二是无法处理循环引用的问题（例如Teacher对象中引用了Student对象，Student对象中又引用了Teacher对象，这种情况下，对象将永远无法被回收）
+#### 11.4.3.标记清除法
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMGCMarkClean.png)
+###### 标记清楚算法是很多垃圾回收算法的基础，简单来说有两个步骤：标记（遍历所有的GC Root，并将从GC Root可达的对象设置为存活对象），清除（遍历堆中所有对象，将北邮被标记的对象清除）
+###### 注意上图中灰色的对象，因为从GC Root遍历不到它们（尽管它们本身有引用关系，但从GC Root无法遍历到它们），因此它们没有被标记为存活对象，在清除过程中将会被回收。
+###### 需要注意的是，为了让java程序暂停等待以保存在标记清楚过程中， 不会有新的对象产生，所以这个算法还是会产生STW
+###### 1.设计大量的内存遍历工作，执行性能较低，STW时间较长，java程序吞吐量降低<br>2.对象呗清楚之后，被清除的对象留下内存的空缺位置，造成内存不连续，空间浪费 
+#### 11.4.4.标记压缩
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMGCMarkCompress.png)
+###### 标记压缩算法就是在标记清除算法的基础上，增加压缩过程，在进行完标记清除之后，对内存空间进行压缩，节省内存空间，解决了标记清除算法内存不连续的问题
+###### 标记压缩算法也会产生STW，不能喝java程序并发执行，在压缩过程中一些对象内存地址会发生改变，java程序只能等待压缩完成后才能继续
+#### 11.4.5.复制算法
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMGCCopy1.png)
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMGCCopy2.png)
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMGCCopy3.png)
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMGCCopy4.png)
+###### 复制算法简单来说就是把内存一分为二，但只使用其中一份，在垃圾回收时，将正在使用的那份内存中存活的对象复制到另一份中，最后将正在使用的内存空间的对象清除，完成垃圾回收
+###### 复制算法相对于标记压缩算法来说更简洁高效，但它的缺点就是不适合用于存活对象多的情况，因为那样需要复制的对象很多，复制性能较差，所以复制算法往往用于内存空间中新生代的垃圾回收。另一个缺点是内存空间占用成本高，因为它基于两份内存空间做对象复制，在非垃圾回收的周期内，只用到了一份内存空间
 ### 11.5.垃圾回收器
+###### JVM中并不是单纯的使用特定的垃圾回收算法，而是使用一种叫垃圾回收器的东西，垃圾回收器可以看成是一系列算法的不同组合，在不同的场景使用合适的垃圾回收器，才能起到事半功倍的效果
+#### 11.5.1.堆内存回顾
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMHeapStructure.png)
+###### java堆内存结构包括：新生代和老年代，其中新生代由一个伊甸区和两个幸存区组成，两个幸存区的大小相同，完全对称，没有任何差别。我们把它们成为S0区和S1区，也可以称为from区和to区<br>JVM的垃圾回收主要针对以上堆空间的垃圾回收，当然其实也会针对元数据区（永久区）进行垃圾回收，在此我们主要介绍对堆空间的垃圾回收
+#### 11.5.2.串行收集器
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMGCSerialColletion.png)
+###### 串行收集器就是使用单线程进行垃圾回收，对新生代的回收使用复制算法，对老年代使用标记压缩算法。串行垃圾收集器是最古老最稳定的收集器，尽管他是串行回收，回收时间较长，但其稳定性是由于其他及回收器的，综合来说是个不错的选择。要使用串行回收器，可以在启动配置时加上一下参数：-XX:+UserSerialGC
+#### 11.5.3.并行回收器
+##### 11.5.3.1.ParNew回收器
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMGCParNewColletion.png)
+###### 这个回收器只针对新生代进行并发回收，在老年代依然使用串行回收。回收算法依然和串行回收一样，同样会产生STW。在多核条件下，他的性能显然由于串行回收器，如果需要使用这种回收器，可以在启动参数中配置：-XX:+UserParNewGC，如果要进一步指定并发的线程数，可以配置一下参数：-XX:ParallelGCThreads
+##### 11.5.3.2.Parallel回收器
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMGCParallelColletion.png)
+###### 依然是并行回收器，但这种回收器有两种配置：<br>一种类似于ParNew：在新生代使用并行回收，在老年代使用串行回收。它与ParNew的不同在于它在设计目标上更重视吞吐量，可以认为在相同条件下它比ParNew更优。要使用这种回收器，可以在启动程序时配置：-XX:UserParallelGC<br>>Parallel回收器的另外一种配置则不同于ParNew，对于新生代和老年代均使用并行回收，要使用这种回收器可以在启动程序中配置：-XX:UserParallelOldGC
+#### 11.5.4.CMS回收器
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMGCCMS.png)
+###### CMS回收器：Concurrent Mark Sweep，并发标记清楚。并发表示它可以与应用程序并发执行，交替执行；标记清楚表示这种回收器不是使用标记压缩算法，这和前面介绍的串行回收器和并行回收器有所不同。需要注意的是CMS回收器是一种针对老年代的回收器，不对新生代产生作用。这种回收器的优点在于减少了应用程序停顿的时间，因为它不需要应用程序暂停等待垃圾回收，要使用这种垃圾回收器可以在启动参数中配置：-XX:UserConcMarkSweepGC
+##### 11.5.4.1.CMS回收器的运行机制：
+###### 初始标记（STW）：进行可达性分析，标记GC Root能够直接关联的对象
+###### 并发标记：是主要的标记过程，进行GC Root Tracing，在第一阶段被暂停的线程重新开始运行，有第一阶段标记过得对象出发，所有可达的对象都在本阶段中标记
+###### 并发预清理：做的工作还是标记，与下一步重新标记功能类似。因为重新标记需要STW，因此冲标记的工作尽可能多的在并发阶段完成来减少STW的时间。此阶段标记从新生代晋升的对象、新分配到老年代的对象以及在并发阶段被修改了的对象 
+###### 重新标记（STW）：暂停所有用户线程，重新扫描堆中的对象，进行可达性分析，标记活着的对象，由于前面的基础，此阶段的工作量被大大减轻，停顿时间因此也会减少。注意这个阶段是多线程的
+###### 并发清理（和用户线程一起）：用户线程被重新激活，同时清理那些无效的对象基于标记结果，直接清理对象
+###### 重置：CMS清除内部状态，为下次回收做准备
+##### 11.5.4.2.并发预清理阶段介绍：JVMGCCMSbfyql1
+###### 此阶段比较复杂，从初学者容易忽略或者说不理解的地方抛出一个问题：如何确定老年代的对象是活着的：答案很简单，通过GC Root Tracing可到达的对象就是活着的：
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMGCCMSbfyql1.png)
+###### 如果老年代进行GC是，如何确保上图中Current Obj标记为活着的，答案是必须扫描新生代来确保，这也是为什么CMS虽然是老年代的gc，但仍要扫描新生代的原因。那么问题来了，全量扫描新生代和老年代很慢，而CMS号称是停顿时间最短的GC，解决方法就是：
+###### 新生代机制：新生代垃圾回收完剩下的对象全是存活的，并且存活的对象很少。如果在扫描新生代之前进行一次Minor GC，情况是不是就变得好很多。CMS有两个参数：CMSScheduleRemarkEdenSizeThreshold、CMSScheduleRemarkEdenPenetration，默认分别为2M、50%，意思就是预清理后，如果eden空间使用超过2M是，启动可中断的并发预清理，直到eden空闲使用率达到50%时中断，进入remark阶段。如果能在可终止的预清理阶段发生一次Minor GC，那就万事大吉了，但可终止的预清理要执行多长时间来保证发生一次Minor GC，这是没法保证的，Gc由JVM自动调度的，CMS的参数CMSMaxAbortablePrecleanTime，默认为5秒，表示只要到了5秒，不管有没有发生Minor GC，都会终止次阶段，进入remark。CMS另一个参数CMSScavengeBeforeRemark参数能够使remark前强制进行一次Minor GC，这样做利弊都有，利是减少了remark阶段的停顿，弊是Minor GC后紧跟一个remark pause，如此一来，停顿时间也很久。为了尽可能减少remark阶段的STW时间，预清理阶段会尽可能多做一些事情，比如remark的rescan阶段是多线程的，为了便于多线程扫描，预清理阶段会将新生代块，每个块中存放着多个对象，这样remark阶段接不需要从头开始识别每个对象的起始位置，遗憾的是，这种办法仍然是建立在发生了Minor GC的条件下的
+###### 老年代机制：老年代机制与一个叫CARD TABLE密不可分。CMS将老年代的空间分成大小为512bytes的块，card table中的每个元素对应着一个块，并发标记时，如果某个对象的引用发生了变化，就标记该对象所在的块为dirty card，并发预处理阶段就会重新扫描该块，将该对象引用的对象标识为可达。
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMGCCMSbfyql2.png)
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMGCCMSbfyql3.png)
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMGCCMSbfyql4.png)
+###### card table还有其他作用：进行Minor GC时，如果有老年代引用新生代，怎么识别，可以将有老年代引用新生代对应的card标记为相应的值
+##### 11.5.4.3.优缺点：
+###### 优点：显而易见，减少了应用程序的停顿时间，让回收线程和用户线程可以并发执行
+###### 缺点：<br>1.多线程回收会抢占CPU资源，这可能会造成用户线程执行效率下降<br>2.并发清理阶段，用户线程还在运行，这段时间就可能产生新的垃圾，这些称为浮动垃圾，只能等到下次清理才能被清理<br>由于垃圾回收阶段用户线程仍在执行，必须预留出内存空间给用户线程使用。因此不能像其他回收器那样，等待老年代满了再进行GC。CMS提供了CMSInitiatingOccupancyFraction参数来设置老年代空间使用百分比，达到百分比就进行垃圾回收。这个参数设置太小，会导致频繁GC；设置太大，会导致用户线程使用空间不足，发生Concurrent Mode Failure错误，这是虚拟机就会启动备案，使用Serial old收集器重新对老年代进行垃圾回收，如此一来，停顿时间变得更长。CMS其实还有一个动态检查机制，会根据历史记录，预测老年代还需要多久填满以及进行一次回收所需要的时间。这个特性可以使用参数UseCMSInitiatingOccupancyOnly来关闭<br>3.使用标记清理算法会造成大量的空间碎片，给大对象分配带来麻烦。CMS的解决方案是使用UseCMSCompactAtFullCollection参数（默认开启），在顶不住要进行Full GC是开启内存碎片整理，这个过程需要STW，会导致停顿时间变长。虚拟机还提供了另外一个参数CMSFullFCsBeforeCompaction，用于设置执行多少次不压缩的Full GC后，跟着来一次带压缩的
+#### 11.5.5.GI回收器
+###### GI回收器是jdk1.7以后推出的回收器，试图取代CMS回收器，
 ### 11.6.类加载器原理
 ### 11.7.性能监控工具
 ## 12.决策树
