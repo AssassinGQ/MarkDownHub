@@ -571,7 +571,8 @@ public static Integer[] vectorToArray(ArrayList<Integer> v){
 #### 8.5.3.Iterator和Enumeration的区别
 ###### Enumeration只有两个函数接口(hasMoreElements(), nextElement())，只能对读取集合的数据，而不能对数据进行修改；Iterator有三个函数接口(hasNext(), next(), remove())，除了能读取数据之外，还能对数据进行删除
 ###### Iterator支持fail-fast机制，而Enumeration不支持。<br>1.Enumeration是JDK1.0中加入的，Enumeration存在的目的就是为它们提供遍历接口。Enumeration本身并不支持同步，而在Vector、Hashtable实现Enumeration时，添加了同步；<br>2.Iterator是JDK1.2才添加的接口，它也是为了HashMap、ArrayList等集合提供遍历接口。Iterator是支持fail-fast机制。
-## 9.String
+## 9.String，StringBuffer，StringBuilder
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/String.jpg)
 ## 10.数据结构（数组，链表，队列，栈，树，图，堆，散列表，红黑树）
 ## 11.JVM，GC
 ### 11.1.基本原理
@@ -762,11 +763,38 @@ public static void main(String[] args){
 ###### card table还有其他作用：进行Minor GC时，如果有老年代引用新生代，怎么识别，可以将有老年代引用新生代对应的card标记为相应的值
 ##### 11.5.4.3.优缺点：
 ###### 优点：显而易见，减少了应用程序的停顿时间，让回收线程和用户线程可以并发执行
-###### 缺点：<br>1.多线程回收会抢占CPU资源，这可能会造成用户线程执行效率下降<br>2.并发清理阶段，用户线程还在运行，这段时间就可能产生新的垃圾，这些称为浮动垃圾，只能等到下次清理才能被清理<br>由于垃圾回收阶段用户线程仍在执行，必须预留出内存空间给用户线程使用。因此不能像其他回收器那样，等待老年代满了再进行GC。CMS提供了CMSInitiatingOccupancyFraction参数来设置老年代空间使用百分比，达到百分比就进行垃圾回收。这个参数设置太小，会导致频繁GC；设置太大，会导致用户线程使用空间不足，发生Concurrent Mode Failure错误，这是虚拟机就会启动备案，使用Serial old收集器重新对老年代进行垃圾回收，如此一来，停顿时间变得更长。CMS其实还有一个动态检查机制，会根据历史记录，预测老年代还需要多久填满以及进行一次回收所需要的时间。这个特性可以使用参数UseCMSInitiatingOccupancyOnly来关闭<br>3.使用标记清理算法会造成大量的空间碎片，给大对象分配带来麻烦。CMS的解决方案是使用UseCMSCompactAtFullCollection参数（默认开启），在顶不住要进行Full GC是开启内存碎片整理，这个过程需要STW，会导致停顿时间变长。虚拟机还提供了另外一个参数CMSFullFCsBeforeCompaction，用于设置执行多少次不压缩的Full GC后，跟着来一次带压缩的
-#### 11.5.5.GI回收器
-###### GI回收器是jdk1.7以后推出的回收器，试图取代CMS回收器，
+###### 缺点：<br>1.多线程回收会抢占CPU资源，这可能会造成用户线程执行效率下降<br>2.并发清理阶段，用户线程还在运行，这段时间就可能产生新的垃圾，这些称为浮动垃圾，只能等到下次清理才能被清理<br>由于垃圾回收阶段用户线程仍在执行，必须预留出内存空间给用户线程使用。因此不能像其他回收器那样，等待老年代满了再进行GC。CMS提供了CMSInitiatingOccupancyFraction参数来设置老年代空间使用百分比，达到百分比就进行垃圾回收。这个参数设置太小，会导致频繁GC；设置太大，会导致用户线程使用空间不足，发生Concurrent Mode Failure错误，这是虚拟机就会启动备案，使用Serial old收集器重新对老年代进行垃圾回收，如此一来，停顿时间变得更长。CMS其实还有一个动态检查机制，会根据历史记录，预测老年代还需要多久填满以及进行一次回收所需要的时间。这个特性可以使用参数UseCMSInitiatingOccupancyOnly来关闭<br>3.使用标记清理算法会造成大量的空间碎片，给大对象分配带来麻烦。CMS的解决方案是使用UseCMSCompactAtFullCollection参数（默认开启），在顶不住要进行Full GC是开启内存碎片整理，这个过程需要STW，会导致停顿时间变长。虚拟机还提供了另外一个参数CMSFullFCsBeforeCompaction，用于设置执行多少次不压缩的Full GC后，跟着来一次带压缩1T
+#### 11.5.5.G1回收器
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMGCG11.jpg)
+###### G1回收器是jdk1.7以后推出的回收器，以关注延迟为目标、服务端用用的垃圾回收器，试图取代CMS回收器。虽然G1也有类似CMS的手机动作：初始标记、并发标记、重新标记、清除、转移回收，并且也以一个串行收集器做担保机制。
+###### G1回收器的设计理念：<br>1.设计原则是首先收集尽可能多的垃圾。因此G1并不会等内存耗尽（串行回收器、并行回收器）或者快耗尽（CMS回收器）的时候开始垃圾手机，而是在内部采用启发式算法，在老年代找出具有高收集收益的分区进行收集。同时G1可以根据用户设置的暂停时间目标自动调整年轻代和总堆的大小，暂停目标越短年轻代空间越小，总空间就越大<br>2.G1采用内存分区的思想，将内存划分为一个个相等大小的内存分区，回收时则以分区为单位进行回收，存活的对象复制到另一个空闲分区中。由于都是以相等大小的分区为单位进行操作，因此G1天然就是一种压缩方案<br>3.G1虽然也是分代收集器，但整个内存分区不存在物理上的年轻代和老年代的却别，也不需要完全独立的survivor堆做复制转呗。G1只有逻辑上的分代概念，或者说每个分区都可能随G1的运行在不同代之间前后切换<br>4.G1收集都是STW的，但年轻代和老年代的收集界限比较模糊，采用了混合收集的方式。即每次收集既可能只收集年轻代分区，也可能在收集年轻代的同时，包含部分老年代分区，这样即使堆内存很大时，也可以限制收集范围，从而降低停顿
+##### 11.5.5.1.G1内存模型
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMGCG12.jpg)
+###### 分区Region：G1采用了分区的思路，将整个堆空间分成若干个大小相等的内存区域，每次分配对象空间将逐段地使用内存。因此，在堆的使用上，G1并不不要求对象的存储一定是物理上连续的，只要逻辑上连续即可；每个分区也不会确定地为某个代服务，可以按需在年轻代和老年代之间雀环。启动时可以通过参数-XX:G1HeapRegionSize=n可指定分区大小（1MB-32Mb，且必须是2的幂），默认将整堆划分成2048个分区
+###### 卡片Card：在每个分区内部被分成了若干个大小为512Byte卡片，标识堆内存最小可用粒度所有分区的卡片将会记录在全局卡片表中，分配的对象会占用物理上连续的若干个卡片，当查找对分区内对象的引用时便可通过记录卡片来查找该引用对象。每次对内存的回收，都是对指定分区的卡片进行处理
+###### 堆Heap：G1同样可以通过-Xms/-Xmx来指定堆空间的大小。当发生年轻代收集或混合收集时，通过计算GC与应用的耗费时间比，自动调整堆空间大小。如果GC频率过高，则通过增加堆尺寸，来减少GC频率，相应地GC占用的时间也随之降低；目标参数-XX:GCTimeRatio即为GC与应用的耗费时间比，G1默认为9，而CMS默认为99，因为CMS的设计原则是耗费在GC上的时间尽可能的少。另外，当空间不足，如对象空间分配或转移失败时，G1会首先尝试增加堆空间，如果扩容失败，则发起担保的Full GC。Full GC后，堆尺寸计算结果也会调整堆空间。
+###### 分代模型
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMGCG13.jpg)
+###### 分代Generation：分代垃圾手机可以将关注点集中在最近被分配的对象上，而无需整堆扫描，避免长命名对象的拷贝，同时独立手机有助于降低响应时间。虽然分区使得内存分配不再要求紧凑的内存空间，但G1依然使用分代的思想。与其他垃圾收集器类似，G1将内存在逻辑上划分为年轻代和老年代，其中年轻代又划分为Eden空间和Survivor空间。但年轻代空间并不是固定不变的，当现有年轻代分区占满时，JVM会分配新的空间分区加入到年轻代空间。<br>整个年轻代内存会在初始空间-XX:G1NewSizePercent（默认整堆5%）与最大空间-XX:G1MaxNewSizePercent（默认60%）之间动态变化，且由参数目标暂停时间-XX:MaxGCPauseMillis（默认200ms）、需要扩缩容的大小以及分区的已记忆集合（RSet）计算得到。当然，G1依然可以设置固定的年轻代大小（参数-XX:NewRatio、-Xmn），但同时暂停目标将失去意义。
+###### 本地分配缓冲：。。。。。。。。。。。。。。不总结了（https://blog.csdn.net/coderlius/article/details/79272773）
 ### 11.6.类加载器原理
-### 11.7.性能监控工具
+###### 我们知道我们编写的java代码，会经过编译器编译成字节码文件（class文件），再把字节码文件装在到JVM中，映射到各个内存区域中，我们的程序就可以在内存中运行了。
+#### 11.6.1.类装载流程：
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMLjzq1.png)
+###### 1.加载：加载是类状态的第一步，首先通过class文件的路径读取到二进制流，并解析二进制流将里面的元数据（类型、常量等）载入到方法区，在java堆中生成对应的java.lang.Class对象
+###### 2.连接：连接过程又分为三步，验证、准备、解析<br>2.1.验证：验证的主要目的就是判断class文件的合法性，比如class文件一定是以0xCAFEBABE开头的，另外对版本号也会做验证，例如如果使用Java1.8编译后的class文件要在java1.6的虚拟机上运行，因为版本的问题就会验证不通过。除此之外还会对元数据、字节码进行验证，具体的验证过程就复杂的多了，可以专门查看相关的资料去来了解<br>2.2.准备过程就是分配内存，给来的一些字段设置初始值，例如public static int v=1;这段代码在准备阶段v的值就会被初始化为0，只有到后面类初始化阶段时才会被设置为1.但是对于static final常量，在准备阶段就会被设置成指定的值<br>2.3.解析过程就是将符号引用替换为直接引用，例如某个类继承java.lang.Object，原来的符号引用记录的是java.lang.Object这个符号，凭借这个符号并不能找到java.lang.Object这个对象在哪里，而直接引用就是要找到java.lang.Object所在的内存地址，建立直接引用关系，这样就方便查询到具体对象
+###### 3.初始化：初始化过程，主要包括执行类构造方法，static变量赋值语句，static{}语句块，需要注意的是如果一个子类进行初始化，那么它会实现初始化其父类，保证父类在子类之前被初始化。所以其实在java中初始化一个类，那么必然先初始化java.lang.Object，因为所有的java类都继承自java.lang.Object
+#### 11.6.2.类加载器
+###### 类加载器是类加载过程中的主角。类加载器ClassLoader它是一个抽象类，ClassLoader的具体实例负责把java字节码读取到JVM中，ClassLoader还可以定制以满足不同字节码流的加载方式，比如从网络加载、从文件加载。ClassLoader的负责整个类装载流程中“加载”阶段。
+##### 11.6.2.1.系统中的ClassLoader
+###### BootStrap ClassLoader（启动ClassLoader）、Extension ClassLoader（扩展ClassLoader）、App ClassLoader（应用ClassLoader）、Custom ClassLoader（自定义ClassLoader）。每个ClassLoader都有另外一个ClassLoader作为父ClassLoader（BootStrap ClassLoader除外）
+##### 11.6.2.2.ClassLoader加载机制（双亲模式）
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/JVMClassLoader.jpg)
+###### 自下向上检查类是否被加载，一般情况下，首先从App ClassLoader中调用findLoadedClass方法查看是否已经加载，如果没有加载，则会交给父类，Extension ClassLoader去查看是否加载，还没加载，则再调用其父类，BootStrap ClassLoader查看是否已经加载，如果仍然没有，自定向下尝试加载类，从BootStrap ClassLoader到App ClassLoader一次尝试加载。<br>值得注意的是，即使两个类来源于相同的class文件，如果使用不同的类加载器加载，加载后的对象是完全不同的，这个不同反映在对象的equals()、isAssignableFrom()、isInstance()等方法的返回结果，也包括了使用instanceof关键字对对象所属关系的判定结果
+##### 11.6.2.3.双亲模式问题
+###### 我们把上一节中，自下向上的检查类是否被加载的过程称为双亲模式。双亲模式存在一个问题，就是父ClassLoader无法加载底层ClassLoader的类<br>比如：javax.xml.parsers包中定义了xml解析的类接口，而Service Provider Interface（SPI）位于rt.jar中，换句话说，接口在BootStrap ClassLoader中，而SPI的实现类在App ClassLoader中，这样BootStrap ClassLoader就无法接在SPI的实现类。<br>解决办法：JDK中提供了一个方法：Thread.setContextClassLoader()，泳衣解决顶层ClassLoader无法访问底层ClassLoader的类的问题，基本思想是，在顶层ClassLoader中，传入底层ClassLoader的实例
+##### 11.6.2.4.双亲模式的破坏
+###### 双亲模式是默认的模式，但不是必须这么做；比如Tomcat的WebappClassLoader就会先加载自己的Class，找不到再委托parent；OSGI的ClassLoader形成网状结构，根据需要自由加载Class
 ## 12.决策树
 ## 13.操作系统生产者消费者
 ### 13.1.背景
