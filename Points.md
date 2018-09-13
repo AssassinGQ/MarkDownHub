@@ -369,6 +369,7 @@ public synchronized void consume()
 ###### Follower主要有四个功能：<br>1.向leader发送请求（PING请求、REQUEST请求、ACK消息、REVALIDATE消息）<br>2.接受Leader消息并进行处理<br>3.接受Client的请求，如果为写请求，发送给Leader进行投票<br>4.给Client返回结果
 ###### Follower的消息循环处理如下几种来自Leader的消息：PING消息（心跳消息）、PROPOSAL消息（Leader发起的提案，要求Follower投票）、COMMIT消息（服务器端最新一次提案的信息）、UPTODATE消息（表明同步完成）、REVALIDATE消息（更具Leader的REVALIDATE结果，关闭revalidate的session还是允许其接受消息）、SYNC消息（返回SYNC结果到客户端，这个消息最初由客户端发起，用来强制得到最新的更新）
 ## 5.redis
+###### redis是一个开源的支持网络、可基于内存亦可持久化的日志型、Key-Value数据库。它的value类型相对更多，包括string字符串、list链表、set集合、zset有序集合、hash哈希类型，这些数据类型都支持push/pop、add/remove以及取交集并集和差集等等丰富的操作，而且这些操作都是原子性的。在此基础上，redis支持各种不同方式的排序。redis的数据都缓存在内存中，但会周期性地把数据写入磁盘或者把修改操作写入追加的记录文件，并在此基础上实现了主从同步
 ## 6.异常分级
 ## 7.中间件
 ## 8.Java集合继承关系图
@@ -573,7 +574,55 @@ public static Integer[] vectorToArray(ArrayList<Integer> v){
 ###### Iterator支持fail-fast机制，而Enumeration不支持。<br>1.Enumeration是JDK1.0中加入的，Enumeration存在的目的就是为它们提供遍历接口。Enumeration本身并不支持同步，而在Vector、Hashtable实现Enumeration时，添加了同步；<br>2.Iterator是JDK1.2才添加的接口，它也是为了HashMap、ArrayList等集合提供遍历接口。Iterator是支持fail-fast机制。
 ## 9.String，StringBuffer，StringBuilder
 ![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/String.jpg)
-## 10.数据结构（数组，链表，队列，栈，树，图，堆，散列表，红黑树）
+### 9.1.String和CharSequence详解
+###### String是java中的字符串，它继承于CharSequence。CharSequence是一个接口，它只包括length(),charAt(int index),subSequence(int start, int end)这几个接口。除了String实现了CharSequence之外，StringBuilder和StringBuffer也实现了CharSequence。String，StringBuilder和StringBuffer本质上都是通过字符数组实现的
+###### CharSequence十分简单
+```java
+package java.lang;
+public interface CharSequence {
+    int length();
+    char charAt(int index);
+    CharSequence subSequence(int start, int end);
+    public String toString();
+}
+```
+###### String本质是一个字符序列，是通过字符数组实现的，有很多API；String是final修饰的（public final class String），String中的字符数组也是final修饰的（private final char value[]），所以String是一个字符串常量，每次改变String，其实都生成了一个新的String对象
+### 9.2.AbStractStringBuilder详解
+###### AbstractStringBuilder是核心，StringBuilder和StringBuffer很多方法的实现是调用父类的方法完成的。
+### 9.3.StringBuilder详解
+###### StringBuilder是一个可变的字符序列，继承于AbStractStringBuilder，实现了CharSequence接口，StringBuilder是线程不安全的
+### 9.4.StringBuffer详解
+###### StringBuffer是一个可变的字符序列，继承于AbStractStringBuilder，实现了CharSequence接口，StringBuffer是线程不安全的
+### 9.5.StringBuilder和StringBuffer区别
+###### StringBuilder 和 StringBuffer都是可变的字符序列。它们都继承于AbstractStringBuilder，实现了CharSequence接口。但是，StringBuilder是非线程安全的，而StringBuffer是线程安全的。
+## 10.数据结构（数组，链表，队列，栈，树，图，堆，散列表，红黑树，决策树）
+### 10.1.散列表
+###### 散列表也成为哈希表，可以根据key直接访问数据。通过散列函数（哈希函数）根据key计算出数据存放的位置，存放数据的数组叫散列表
+#### 10.1.1.hash冲突
+###### 即不同的key计算出来的hash值一致，解决哈希冲突的方法主要有一下几种。下面哈希函数表示为H(key);
+##### 10.1.1.1.开放寻址法
+###### 如果H(key)冲突，则求得一个地址序列：
+```
+H0,H1,H2,...,Hs  1 <= s <= m-1，
+其中： Hi = H(key),            i = 0
+       Hi=(H(key)+di) mod m    i=1,2,...,s
+其中： m是表的长度
+       di可以有三种取法：
+            线性探测再散列：di = 1,2,3,...,m-1
+            平方探测再散列：di = 1^2,-1^2,2^2,-2^2,3^2,-3^2,...,k^2,-k^2，k<=m/2
+            随机探测再散列：di是一组伪随机数列      
+当产生哈希冲突时，依次使用H1,H2,...,Hs作为位置，直到找到一个空单元或者查遍全表                 
+```
+##### 10.1.1.2.再散列法
+###### 再散列法就是同事构造多个不同的哈希函数，当发生哈希冲突时，使用下一个哈希函数，直到冲突不再产生或哈希函数耗尽，这种方法不易产生聚集，但增加了计算时间
+##### 10.1.1.3.拉链法
+###### 相同hash值的数据保存在一个链表中
+##### 10.1.1.4.建立一个公共溢出区
+###### 无话可说
+### 10.2.堆，堆排序
+
+### 10.3.红黑树
+### 10.4.决策树
 ## 11.JVM，GC
 ### 11.1.基本原理
 #### 11.1.1.Java程序从编译到运行的过程
@@ -795,7 +844,7 @@ public static void main(String[] args){
 ###### 我们把上一节中，自下向上的检查类是否被加载的过程称为双亲模式。双亲模式存在一个问题，就是父ClassLoader无法加载底层ClassLoader的类<br>比如：javax.xml.parsers包中定义了xml解析的类接口，而Service Provider Interface（SPI）位于rt.jar中，换句话说，接口在BootStrap ClassLoader中，而SPI的实现类在App ClassLoader中，这样BootStrap ClassLoader就无法接在SPI的实现类。<br>解决办法：JDK中提供了一个方法：Thread.setContextClassLoader()，泳衣解决顶层ClassLoader无法访问底层ClassLoader的类的问题，基本思想是，在顶层ClassLoader中，传入底层ClassLoader的实例
 ##### 11.6.2.4.双亲模式的破坏
 ###### 双亲模式是默认的模式，但不是必须这么做；比如Tomcat的WebappClassLoader就会先加载自己的Class，找不到再委托parent；OSGI的ClassLoader形成网状结构，根据需要自由加载Class
-## 12.决策树
+## 12.排序
 ## 13.操作系统生产者消费者
 ### 13.1.背景
 ###### 生产者生产数据到缓冲区，消费者从缓冲区中取数据；如果缓冲区满了，则生产者线程阻塞；如果缓冲区空了，则消费者线程阻塞
@@ -1022,7 +1071,31 @@ class Resource3{
 ###### Java的泛型靠的还是类型擦除，目标代码只会生成一份，牺牲的是运行速度。
 ###### C++的模板会对针对不同的模板参数静态实例化，目标代码体积会稍大一些，运行速度会快很多。
 ## 15.Java设计模式
-###
+###### 分为三大类：创建型模式（工厂方法模式、抽象工厂模式、单例模式、建造者），结构型模式（适配器模式、装饰器模式、代理模式、外观模式、桥接模式、组合模式、享元模式），行为型模式（策略模式、模板方法模式、观察者模式、迭代子模式、责任链模式、命令模式、备忘录模式、状态模式、访问者模式、中介者模式、解释器模式）
+###### 设计模式的六大原则：<br>1.开闭原则：对扩展开放，对修改关闭<br>2.里氏代换原则：只有当衍生类可以替换掉基类，软件单位的而功能不受到影响，基类才能真正被复用，而衍生类也能够在基类的基础上增加新的行为<br>3.依赖倒转原则：这个是开闭原则的基础，对接口编程，依赖于抽象而不依赖于具体<br>4.接口隔离原则：使用多个隔离的接口来降低耦合度<br>5.迪米特法则（最少知道法则）：一个实体应当尽量少的与其他实体之间发生相互作用，使得系统功能模块相对独立<br>6.合成复用原则：原则是尽量使用合成/聚合的方式，而不是使用继承。继承实际上破坏了类的封装性，超类的方法可能会被子类修改
+### 15.1.[工厂方法模式](http://www.cnblogs.com/java-my-life/archive/2012/03/28/2418836.html)
+### 15.2.[抽象工厂模式](http://www.cnblogs.com/java-my-life/archive/2012/03/25/2416227.html)
+### 15.3.[单例模式](http://www.cnblogs.com/java-my-life/archive/2012/03/31/2425631.html)
+### 15.4.[建造者模式](http://www.cnblogs.com/java-my-life/archive/2012/04/07/2433939.html)
+### 15.5.[原型模式](http://www.cnblogs.com/java-my-life/archive/2012/04/11/2439387.html)
+### 15.6.[适配器模式](http://www.cnblogs.com/java-my-life/archive/2012/04/13/2442795.html)
+### 15.7.[装饰器模式](http://www.cnblogs.com/java-my-life/archive/2012/04/20/2455726.html)
+### 15.8.[代理模式](http://www.cnblogs.com/java-my-life/archive/2012/04/23/2466712.html)
+### 15.9.[外观模式](http://blog.csdn.net/jason0539/article/details/22775311)
+### 15.10.[桥接模式](http://blog.csdn.net/jason0539/article/details/22568865)
+### 15.11.[组合模式](http://blog.csdn.net/jason0539/article/details/22642281)
+### 15.12.[享元模式](http://www.cnblogs.com/java-my-life/archive/2012/04/26/2468499.html)
+### 15.13.[策略模式](http://www.cnblogs.com/java-my-life/archive/2012/05/10/2491891.html)
+### 15.14.[模板方法模式](http://www.cnblogs.com/java-my-life/archive/2012/05/14/2495235.html)
+### 15.15.[观察者模式](http://www.cnblogs.com/java-my-life/archive/2012/05/16/2502279.html)
+### 15.16.[迭代子模式](http://www.cnblogs.com/java-my-life/archive/2012/05/22/2511506.html)
+### 15.17.[责任链模式](http://blog.csdn.net/zhouyong0/article/details/7909456)
+### 15.18.[命令模式](http://www.cnblogs.com/java-my-life/archive/2012/06/01/2526972.html)
+### 15.19.[备忘录模式](http://www.cnblogs.com/java-my-life/archive/2012/06/06/2534942.html)
+### 15.20.[状态模式](http://www.cnblogs.com/java-my-life/archive/2012/06/08/2538146.html)
+### 15.21.[访问者模式](http://www.cnblogs.com/java-my-life/archive/2012/06/14/2545381.html)
+### 15.22.[中介者模式](http://blog.csdn.net/chenhuade85/article/details/8141831)
+### 15.23.[解释器模式](http://www.cnblogs.com/java-my-life/archive/2012/06/19/2552617.html)
 ## 16.Java反射
 ###### Java反射机制，通俗来说，就是在运行状态中，我们可以更具类的部分信息，来还原类的全部信息。这里的类的部分信息，可以是类名或累的对象等信息，累的全部信息，是指累的属性、方法、继承关系和注解等内容。比如假设对于类ReflectionTest.java，我们知道的唯一信息是它的类名：com.example.Reflection，这时我们可以通过反射知道它的其他信息
 ### 16.1.获取Class对象的方法
@@ -1142,7 +1215,7 @@ public class ImplicitGarbageRetrieve {
 ###### 最原始的回调函数是C语言中，回调函数实现了底层调用高层函数的功能。高层在调用底层函数时，将一个函数指针传给被调用的函数，当被调用的函数返回时，会调用该函数指针所指的函数，同时将返回值以参数的形式传给这个函数指针对应的函数。这个函数指针所指的函数就是回调函数。所以回调函数的意思就是调用了一个函数后，被调用的函数回过来调用高层的函数
 ### 18.2.java回调函数的一般实现
 ###### 首先要设计一个接口a，里面可以定义一些方法。类b里面保留一个接口a的属性property-c，并设置property-c的setter方法。类d里实例化类b，并传入一个实现了接口a的引用给类b，在特定的事件驱动下类b会调用传入的实现接口a的对象的方法，实现了回调
-# 区块链 找程硕 骆志坤 截图
+# 区块链 找程硕 骆志坤 截图 剑指offer
 
 ----------
 
