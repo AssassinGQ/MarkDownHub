@@ -1227,7 +1227,7 @@ public static void main(String[] args){
 ## 12.排序
 ![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/Sort.png)
 ### 12.1.冒泡排序
-![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/BubbleSort.gifasdas)
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/BubbleSort.gif)
 ```
 function bubbleSort(arr) {
     var len = arr.length;
