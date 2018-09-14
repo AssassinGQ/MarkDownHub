@@ -1227,14 +1227,304 @@ public static void main(String[] args){
 ## 12.排序
 ![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/Sort.png)
 ### 12.1.冒泡排序
-![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/BubbleSort.gif)
-###### 
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/BubbleSort.gifasdas)
+```
+function bubbleSort(arr) {
+    var len = arr.length;
+    for (var i = 0; i < len - 1; i++) {
+        for (var j = 0; j < len - 1 - i; j++) {
+            if (arr[j] > arr[j+1]) {        // 相邻元素两两对比
+                var temp = arr[j+1];        // 元素交换
+                arr[j+1] = arr[j];
+                arr[j] = temp;
+            }
+        }
+    }
+    return arr;
+}
+```
 ### 12.2.选择排序
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/SelectionSort.gif)
+```
+function selectionSort(arr) {
+    var len = arr.length;
+    var minIndex, temp;
+    for (var i = 0; i < len - 1; i++) {
+        minIndex = i;
+        for (var j = i + 1; j < len; j++) {
+            if (arr[j] < arr[minIndex]) {     // 寻找最小的数
+                minIndex = j;                 // 将最小数的索引保存
+            }
+        }
+        temp = arr[i];
+        arr[i] = arr[minIndex];
+        arr[minIndex] = temp;
+    }
+    return arr;
+} 
+```
 ### 12.3.插入排序
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/InsertionSort.gif)
+```
+function insertionSort(arr) {
+    var len = arr.length;
+    var preIndex, current;
+    for (var i = 1; i < len; i++) {
+        preIndex = i - 1;
+        current = arr[i];
+        while (preIndex >= 0 && arr[preIndex] > current) {
+            arr[preIndex + 1] = arr[preIndex];
+            preIndex--;
+        }
+        arr[preIndex + 1] = current;
+    }
+    return arr;
+}
+```
+###### 插入排序插入时，如果比较操作的代价比交换操作大的话，可以采用二分查找法来减少比较操作的次数，我们成为二分插入排序
+### 12.4.希尔排序
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/ShellSort.gif)
+```
+function shellSort(arr) {
+    var len = arr.length,
+        temp,
+        gap = 1;
+    while (gap < len / 3) {          // 动态定义间隔序列
+        gap = gap * 3 + 1;
+    }
+    for (gap; gap > 0; gap = Math.floor(gap / 3)) {
+        for (var i = gap; i < len; i++) {
+            temp = arr[i];
+            for (var j = i-gap; j > 0 && arr[j]> temp; j-=gap) {
+                arr[j + gap] = arr[j];
+            }
+            arr[j + gap] = temp;
+        }
+    }
+    return arr;
+}
+```
 ### 12.4.归并排序
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/MergeSort.gif)
+```
+function mergeSort(arr) {  // 采用自上而下的递归方法
+    var len = arr.length;
+    if (len < 2) {
+        return arr;
+    }
+    var middle = Math.floor(len / 2),
+        left = arr.slice(0, middle),
+        right = arr.slice(middle);
+    return merge(mergeSort(left), mergeSort(right));
+}
+ 
+function merge(left, right) {
+    var result = [];
+ 
+    while (left.length>0 && right.length>0) {
+        if (left[0] <= right[0]) {
+            result.push(left.shift());
+        } else {
+            result.push(right.shift());
+        }
+    }
+ 
+    while (left.length)
+        result.push(left.shift());
+ 
+    while (right.length)
+        result.push(right.shift());
+ 
+    return result;
+}
+```
 ### 12.5.堆排序
+###### 参见10.2
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/HeapSort.gif)
+```
+var len;    // 因为声明的多个函数都需要数据长度，所以把len设置成为全局变量
+ 
+function buildMaxHeap(arr) {   // 建立大顶堆
+    len = arr.length;
+    for (var i = Math.floor(len/2); i >= 0; i--) {
+        heapify(arr, i);
+    }
+}
+ 
+function heapify(arr, i) {     // 堆调整
+    var left = 2 * i + 1,
+        right = 2 * i + 2,
+        largest = i;
+ 
+    if (left < len && arr[left] > arr[largest]) {
+        largest = left;
+    }
+ 
+    if (right < len && arr[right] > arr[largest]) {
+        largest = right;
+    }
+ 
+    if (largest != i) {
+        swap(arr, i, largest);
+        heapify(arr, largest);
+    }
+}
+ 
+function swap(arr, i, j) {
+    var temp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = temp;
+}
+ 
+function heapSort(arr) {
+    buildMaxHeap(arr);
+ 
+    for (var i = arr.length - 1; i > 0; i--) {
+        swap(arr, 0, i);
+        len--;
+        heapify(arr, 0);
+    }
+    return arr;
+}
+```
 ### 12.6.快速排序
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/QuickSort.gif)
+###### 快速排序的基本思想：通过一趟排序将待排记录分隔成独立的两部分，其中一部分记录的关键字均比另一部分的关键字小，则可分别对这两部分记录继续进行排序，以达到整个序列有序。
+###### 算法描述：快速排序使用分治法把一个串（list）分成两个子串（sub-lists）。具体算法描述如下：<br>1.从数列中挑出一个元素，称为“基准”(pivot)<br>2.重新排序数列，所有元素比基准值小的摆放在基准前面，大的摆放在后面，在这个分区退出之后，该基准就处于数列的中间位置。这个称为分区操作<br>3.递归的，把小于基准值元素的子数列和大于基准值元素的子数列排序
+```
+function quickSort(arr, left, right) {
+    var len = arr.length,
+        partitionIndex,
+        left = typeof left != 'number' ? 0 : left,
+        right = typeof right != 'number' ? len - 1 : right;
+ 
+    if (left < right) {
+        partitionIndex = partition(arr, left, right);
+        quickSort(arr, left, partitionIndex-1);
+        quickSort(arr, partitionIndex+1, right);
+    }
+    return arr;
+}
+ 
+function partition(arr, left ,right) {     // 分区操作
+    var pivot = left,                      // 设定基准值（pivot）
+        index = pivot + 1;
+    for (var i = index; i <= right; i++) {
+        if (arr[i] < arr[pivot]) {
+            swap(arr, i, index);
+            index++;
+        }       
+    }
+    swap(arr, pivot, index - 1);
+    return index-1;
+}
+ 
+function swap(arr, i, j) {
+    var temp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = temp;
+}
+```
+### 12.7.计数排序
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/CountingSort.gif)
+```
+function countingSort(arr, maxValue) {
+    var bucket = new Array(maxValue + 1),
+        sortedIndex = 0;
+        arrLen = arr.length,
+        bucketLen = maxValue + 1;
+ 
+    for (var i = 0; i < arrLen; i++) {
+        if (!bucket[arr[i]]) {
+            bucket[arr[i]] = 0;
+        }
+        bucket[arr[i]]++;
+    }
+ 
+    for (var j = 0; j < bucketLen; j++) {
+        while(bucket[j] > 0) {
+            arr[sortedIndex++] = j;
+            bucket[j]--;
+        }
+    }
+ 
+    return arr;
+}
+```
+### 12.8.桶排序
+##### 桶排序是计数排序的升级版。它利用了函数的映射关系，高效与否的关键就在于这个映射函数的确定。桶排序 (Bucket sort)的工作的原理：假设输入数据服从均匀分布，将数据分到有限数量的桶里，每个桶再分别排序（有可能再使用别的排序算法或是以递归方式继续使用桶排序进行排）
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/BucketSort.png)
+```
+function bucketSort(arr, bucketSize) {
+    if (arr.length === 0) {
+      return arr;
+    }
+ 
+    var i;
+    var minValue = arr[0];
+    var maxValue = arr[0];
+    for (i = 1; i < arr.length; i++) {
+      if (arr[i] < minValue) {
+          minValue = arr[i];                // 输入数据的最小值
+      } else if (arr[i] > maxValue) {
+          maxValue = arr[i];                // 输入数据的最大值
+      }
+    }
+ 
+    // 桶的初始化
+    var DEFAULT_BUCKET_SIZE = 5;            // 设置桶的默认数量为5
+    bucketSize = bucketSize || DEFAULT_BUCKET_SIZE;
+    var bucketCount = Math.floor((maxValue - minValue) / bucketSize) + 1;  
+    var buckets = new Array(bucketCount);
+    for (i = 0; i < buckets.length; i++) {
+        buckets[i] = [];
+    }
+ 
+    // 利用映射函数将数据分配到各个桶中
+    for (i = 0; i < arr.length; i++) {
+        buckets[Math.floor((arr[i] - minValue) / bucketSize)].push(arr[i]);
+    }
+ 
+    arr.length = 0;
+    for (i = 0; i < buckets.length; i++) {
+        insertionSort(buckets[i]);                      // 对每个桶进行排序，这里使用了插入排序
+        for (var j = 0; j < buckets[i].length; j++) {
+            arr.push(buckets[i][j]);                     
+        }
+    }
+ 
+    return arr;
+}
+```
 ### 12.7.最低位优先基数排序
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/RadixSort.gif)
+```
+// LSD Radix Sort
+var counter = [];
+function radixSort(arr, maxDigit) {
+    var mod = 10;
+    var dev = 1;
+    for (var i = 0; i < maxDigit; i++, dev *= 10, mod *= 10) {
+        for(var j = 0; j < arr.length; j++) {
+            var bucket = parseInt((arr[j] % mod) / dev);
+            if(counter[bucket]==null) {
+                counter[bucket] = [];
+            }
+            counter[bucket].push(arr[j]);
+        }
+        var pos = 0;
+        for(var j = 0; j < counter.length; j++) {
+            var value = null;
+            if(counter[j]!=null) {
+                while ((value = counter[j].shift()) != null) {
+                      arr[pos++] = value;
+                }
+          }
+        }
+    }
+    return arr;
+}
+```
 ## 13.操作系统生产者消费者
 ### 13.1.背景
 ###### 生产者生产数据到缓冲区，消费者从缓冲区中取数据；如果缓冲区满了，则生产者线程阻塞；如果缓冲区空了，则消费者线程阻塞
