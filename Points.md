@@ -1225,12 +1225,16 @@ public static void main(String[] args){
 ##### 11.6.2.4.双亲模式的破坏
 ###### 双亲模式是默认的模式，但不是必须这么做；比如Tomcat的WebappClassLoader就会先加载自己的Class，找不到再委托parent；OSGI的ClassLoader形成网状结构，根据需要自由加载Class
 ## 12.排序
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/Sort.png)
 ### 12.1.冒泡排序
+![avatar](https://raw.githubusercontent.com/AssassinGQ/MarkDownHub/master/BubbleSort.gif)
+###### 
 ### 12.2.选择排序
 ### 12.3.插入排序
 ### 12.4.归并排序
 ### 12.5.堆排序
 ### 12.6.快速排序
+### 12.7.最低位优先基数排序
 ## 13.操作系统生产者消费者
 ### 13.1.背景
 ###### 生产者生产数据到缓冲区，消费者从缓冲区中取数据；如果缓冲区满了，则生产者线程阻塞；如果缓冲区空了，则消费者线程阻塞
